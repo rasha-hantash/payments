@@ -1,0 +1,53 @@
+version: '3'
+vars:
+    GIT_COMMIT:
+    sh: git log --pretty=format:'%h' -n 1
+tasks:
+    migrate:create:
+        vars:
+            NAME: "{{.NAME}}"
+        cmds:
+          - migrate create -ext sql -dir sql/migrations/ -seq {{.NAME}}
+
+    migrate:up:local:
+        cmds:
+          - migrate -path sql/migrations/ -database "postgresql://postgres:postgres@localhost:5438/?sslmode=disable" -verbose up
+
+    migrate:down:local:
+        cmds:
+          - migrate -path sql/migrations/ -database "postgresql://postgres:postgres@localhost:5438/?sslmode=disable" -verbose down
+
+
+    migrate:up:remote:
+      vars:
+        CONNECTION_STRING: "{{.CONNECTION_STRING}}"
+      cmds:
+        - migrate -path sql/migrations/ -database "{{.CONNECTION_STRING}}" -verbose up
+
+    migrate:down:remote:
+      vars:
+        CONNECTION_STRING: "{{.CONNECTION_STRING}}"
+      cmds:
+        - migrate -path sql/migrations/ -database "{{.CONNECTION_STRING}}" -verbose down
+
+    # staging Builds
+    docker:staging:build:gateway:
+        cmds:
+          - TODO
+    docker:staging:build:api:
+        cmds:
+          - TODO
+    docker:staging:push:gateway:
+        cmds:
+          - TODO
+    docker:staging:push:api:
+        cmds:
+          - TODO
+
+    # Add new proto get commands here
+    proto:gen:api:
+      desc: |
+        Generate Protobuf client and server code
+      cmds:
+        -  protoc --proto_path=./protos --go_out=. --go_opt=Mclaims.proto=pkgs/services/claims/pkg/grpc --go-grpc_out=. --go-grpc_opt=Mclaims.proto=pkgs/services/claims/pkg/grpc ./protos/claims.proto
+
