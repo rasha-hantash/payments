@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/rasha-hantash/chariot-takehome/api/grpc/proto";
+
+import "google/protobuf/timestamp.proto";
+
+service ApiService {
+  rpc CreateUser(CreateUserRequest) returns (User);
+  rpc CreateAccount(CreateAccountRequest) returns (Account);
+  rpc DepositFunds(TransactionRequest) returns (Transaction);
+  rpc WithdrawFunds(TransactionRequest) returns (Transaction);
+  rpc TransferFunds(TransferRequest) returns (Transaction);
+  rpc ListTransactions(ListTransactionsRequest) returns (ListTransactionsResponse);
+  rpc GetAccountBalance(GetAccountBalanceRequest) returns (AccountBalance);
+}
+
+message User {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+}
+
+message Account {
+  string id = 1;
+  string account_type = 2;
+  string account_state = 3;
+}
+
+message Transaction {
+  string id = 1;
+  string account_id = 2;
+  int64 amount = 4;
+  string direction = 5;
+}
+
+message CreateUserRequest {
+  string name = 1;
+  string email = 2;
+}
+
+message CreateAccountRequest {
+  string user_id = 1;
+  string account_type = 2;
+  string currency = 3;
+}
+
+message TransactionRequest {
+  string account_id = 1;
+  int64 amount = 2;
+}
+
+message TransferRequest {
+  string from_account_id = 1;
+  string to_account_id = 2;
+  int64 amount = 3;
+}
+
+message ListTransactionsRequest {
+  string account_id = 1;
+  string cursor = 2;
+  int32 page_size = 3;
+}
+
+message ListTransactionsResponse {
+  repeated Transaction transactions = 1;
+  string next_cursor = 2;
+}
+
+message GetAccountBalanceRequest {
+  string account_id = 1;
+  google.protobuf.Timestamp at_time = 2;
+}
+
+message AccountBalance {
+  string account_id = 1;
+  int64 balance = 2;
+  google.protobuf.Timestamp as_of = 3;
+}
