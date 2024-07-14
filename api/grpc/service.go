@@ -55,7 +55,7 @@ func (g *GrpcService) CreateAccount(ctx context.Context, req *pb.CreateAccountRe
 	}, nil
 }
 
-func (g *GrpcService) DepositFunds(ctx context.Context, req *pb.DepositFunds) (*pb.Transaction, error) {
+func (g *GrpcService) DepositFunds(ctx context.Context, req *pb.DepositFundsRequest) (*pb.Transaction, error) {
 	// Get the account
 	// Get the transaction
 	// Update the account
@@ -73,7 +73,7 @@ func (g *GrpcService) WithdrawFunds(ctx context.Context, req *pb.WithdrawFundsRe
 	
 	
 
-	id, err := g.TransactionRepo.WithdrawFunds(ctx, req.userId, req.debitAccount, req.CrediAccount, req.Amount)
+	id, err := g.TransactionRepo.WithdrawFunds(ctx, req.Amount, req.UserId, req.DebitAccountId, req.CreditAccountId)
 	if err != nil {
 		return nil, err
 	}

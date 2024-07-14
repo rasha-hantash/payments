@@ -9,11 +9,36 @@ import "google/protobuf/timestamp.proto";
 service ApiService {
   rpc CreateUser(CreateUserRequest) returns (User);
   rpc CreateAccount(CreateAccountRequest) returns (Account);
-  rpc DepositFunds(TransactionRequest) returns (Transaction);
-  rpc WithdrawFunds(TransactionRequest) returns (Transaction);
-  rpc TransferFunds(TransferRequest) returns (Transaction);
+  rpc DepositFunds(DepositFundsRequest) returns (Transaction);
+  rpc WithdrawFunds(WithdrawFundsRequest) returns (Transaction);
+  rpc TransferFunds(TransferFundsRequest) returns (Transaction);
   rpc ListTransactions(ListTransactionsRequest) returns (ListTransactionsResponse);
   rpc GetAccountBalance(GetAccountBalanceRequest) returns (AccountBalance);
+}
+
+message DepositFundsRequest {
+  int64 amount = 1;
+  string user_id = 2;
+  string debit_account_id = 3;
+  string credit_account_id = 4;
+
+}
+
+
+message WithdrawFundsRequest {
+  int64 amount = 1;
+  string user_id = 2;
+  string debit_account_id = 3;
+  string credit_account_id = 4;
+
+}
+
+message TransferFundsRequest {
+  int64 amount = 1;
+  string user_id = 2;
+  string debit_account_id = 3;
+  string credit_account_id = 4;
+
 }
 
 message User {
@@ -43,7 +68,7 @@ message CreateUserRequest {
 message CreateAccountRequest {
   string user_id = 1;
   string account_type = 2;
-  string currency = 3;
+  string account_state = 3;
 }
 
 message TransactionRequest {
@@ -51,11 +76,6 @@ message TransactionRequest {
   int64 amount = 2;
 }
 
-message TransferRequest {
-  string from_account_id = 1;
-  string to_account_id = 2;
-  int64 amount = 3;
-}
 
 message ListTransactionsRequest {
   string account_id = 1;

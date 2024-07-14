@@ -1,0 +1,77 @@
+version: '3.7'
+services:
+  postgres:
+    image: postgres:14.6
+    restart: always
+    hostname: postgres-srv
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    ports:
+      - '5438:5432'
+    networks:
+      - claimclam
+    # volumes:
+      # copy the sql script to create tables
+      # - ./sql/01_drop_tables.sql:/docker-entrypoint-initdb.d/01_drop_tables.sql
+      #  - ./sql/container_setup/02_create_tables.sql:/docker-entrypoint-initdb.d/02_create_tables.sql
+      #  - ./sql/container_setup/03_add_settlements.sql:/docker-entrypoint-initdb.d/03_add_settlements.sql
+      #  - ./sql/container_setup/05_insert_userprofile.sql:/docker-entrypoint-initdb.d/05_insert_userprofile.sql
+      #  - ./sql/container_setup/04_fill_tables.sql:/docker-entrypoint-initdb.d/04_fill_tables.sql
+  gateway:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.gateway
+    environment:
+      - GATEWAY_PORT=8080
+      - ENVIRONMENT=local
+      - CLAIMS_SERVICE_ADDR=claims-api
+    container_name: gateway-api
+    hostname: gateway-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - claimclam
+  claims:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.claims
+    environment:
+      - CONN_STRING=postgresql://postgres:postgres@postgres:5432/?sslmode=disable
+      - DB_USER
+      - DB_PORT
+      - DB_HOST
+      - DB_REGION
+      - DB_NAME
+      - PORT=9093
+      - MODE=local
+      - AUTHORIZED_AGENT_URL=https://drive.google.com/file/d/authorized_agent
+    container_name: claims-api
+    hostname: claims-api
+    ports:
+      - "9093:9093"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - claimclam
+volumes:
+  pgdata:
+networks:
+  chariot:
+    name: chariot
+
+
+# curl -X POST http://localhost:8080/create_user -H "Content-Type: application/json" -d '{
+#     "name": "John Doe",
+#     "email": "john.doe@example.com",
+#     "password": "securepassword123"
+# }'

@@ -177,7 +177,7 @@ func (t *TransactionRepository) ListTransactions(ctx context.Context, filter Tra
 		}
 
 		transaction := &Transaction{}
-		err := rows.Scan(&transaction.ID, &transaction.AccountID, &transaction.Amount, &transaction.Direction)
+		err := rows.Scan(&transaction.Id, &transaction.AccountId, &transaction.Amount, &transaction.Direction)
 		if err != nil {
 			slog.ErrorContext(ctx, "error while scanning transaction", "error", err)
 			return nil, "", err

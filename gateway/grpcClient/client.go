@@ -1,8 +1,9 @@
 package grpcClient
 
 import (
-	"context"
 	"log/slog"
+	"context"
+	"time"
 
 	pb "github.com/rasha-hantash/chariot-takehome/api/grpc/proto"
 	"google.golang.org/grpc"
@@ -26,7 +27,11 @@ func NewApiClient(serverAddr string) (*ApiClient, error) {
 	return &ApiClient{client: pb.NewApiServiceClient(conn), Conn: conn}, nil
 }
 
-func (c *ApiClient) CreateUser(ctx context.Context, name string, email string) error {
-	_, err := c.client.CreateUser(ctx, &pb.CreateUserRequest{Name: name, Email: email})
-	return err
+
+
+
+func (c *ApiClient) CreateUser(req *pb.CreateUserRequest) (*pb.User, error) {
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+    return c.client.CreateUser(ctx, req)
 }

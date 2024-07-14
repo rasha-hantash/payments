@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	_ "github.com/lib/pq"
 
 	"github.com/caarlos0/env/v6"
 

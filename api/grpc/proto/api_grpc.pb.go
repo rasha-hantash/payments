@@ -34,9 +34,9 @@ const (
 type ApiServiceClient interface {
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error)
 	CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*Account, error)
-	DepositFunds(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*Transaction, error)
-	WithdrawFunds(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*Transaction, error)
-	TransferFunds(ctx context.Context, in *TransferRequest, opts ...grpc.CallOption) (*Transaction, error)
+	DepositFunds(ctx context.Context, in *DepositFundsRequest, opts ...grpc.CallOption) (*Transaction, error)
+	WithdrawFunds(ctx context.Context, in *WithdrawFundsRequest, opts ...grpc.CallOption) (*Transaction, error)
+	TransferFunds(ctx context.Context, in *TransferFundsRequest, opts ...grpc.CallOption) (*Transaction, error)
 	ListTransactions(ctx context.Context, in *ListTransactionsRequest, opts ...grpc.CallOption) (*ListTransactionsResponse, error)
 	GetAccountBalance(ctx context.Context, in *GetAccountBalanceRequest, opts ...grpc.CallOption) (*AccountBalance, error)
 }
@@ -67,7 +67,7 @@ func (c *apiServiceClient) CreateAccount(ctx context.Context, in *CreateAccountR
 	return out, nil
 }
 
-func (c *apiServiceClient) DepositFunds(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*Transaction, error) {
+func (c *apiServiceClient) DepositFunds(ctx context.Context, in *DepositFundsRequest, opts ...grpc.CallOption) (*Transaction, error) {
 	out := new(Transaction)
 	err := c.cc.Invoke(ctx, ApiService_DepositFunds_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -76,7 +76,7 @@ func (c *apiServiceClient) DepositFunds(ctx context.Context, in *TransactionRequ
 	return out, nil
 }
 
-func (c *apiServiceClient) WithdrawFunds(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*Transaction, error) {
+func (c *apiServiceClient) WithdrawFunds(ctx context.Context, in *WithdrawFundsRequest, opts ...grpc.CallOption) (*Transaction, error) {
 	out := new(Transaction)
 	err := c.cc.Invoke(ctx, ApiService_WithdrawFunds_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -85,7 +85,7 @@ func (c *apiServiceClient) WithdrawFunds(ctx context.Context, in *TransactionReq
 	return out, nil
 }
 
-func (c *apiServiceClient) TransferFunds(ctx context.Context, in *TransferRequest, opts ...grpc.CallOption) (*Transaction, error) {
+func (c *apiServiceClient) TransferFunds(ctx context.Context, in *TransferFundsRequest, opts ...grpc.CallOption) (*Transaction, error) {
 	out := new(Transaction)
 	err := c.cc.Invoke(ctx, ApiService_TransferFunds_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -118,9 +118,9 @@ func (c *apiServiceClient) GetAccountBalance(ctx context.Context, in *GetAccount
 type ApiServiceServer interface {
 	CreateUser(context.Context, *CreateUserRequest) (*User, error)
 	CreateAccount(context.Context, *CreateAccountRequest) (*Account, error)
-	DepositFunds(context.Context, *TransactionRequest) (*Transaction, error)
-	WithdrawFunds(context.Context, *TransactionRequest) (*Transaction, error)
-	TransferFunds(context.Context, *TransferRequest) (*Transaction, error)
+	DepositFunds(context.Context, *DepositFundsRequest) (*Transaction, error)
+	WithdrawFunds(context.Context, *WithdrawFundsRequest) (*Transaction, error)
+	TransferFunds(context.Context, *TransferFundsRequest) (*Transaction, error)
 	ListTransactions(context.Context, *ListTransactionsRequest) (*ListTransactionsResponse, error)
 	GetAccountBalance(context.Context, *GetAccountBalanceRequest) (*AccountBalance, error)
 	mustEmbedUnimplementedApiServiceServer()
@@ -136,13 +136,13 @@ func (UnimplementedApiServiceServer) CreateUser(context.Context, *CreateUserRequ
 func (UnimplementedApiServiceServer) CreateAccount(context.Context, *CreateAccountRequest) (*Account, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateAccount not implemented")
 }
-func (UnimplementedApiServiceServer) DepositFunds(context.Context, *TransactionRequest) (*Transaction, error) {
+func (UnimplementedApiServiceServer) DepositFunds(context.Context, *DepositFundsRequest) (*Transaction, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DepositFunds not implemented")
 }
-func (UnimplementedApiServiceServer) WithdrawFunds(context.Context, *TransactionRequest) (*Transaction, error) {
+func (UnimplementedApiServiceServer) WithdrawFunds(context.Context, *WithdrawFundsRequest) (*Transaction, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WithdrawFunds not implemented")
 }
-func (UnimplementedApiServiceServer) TransferFunds(context.Context, *TransferRequest) (*Transaction, error) {
+func (UnimplementedApiServiceServer) TransferFunds(context.Context, *TransferFundsRequest) (*Transaction, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TransferFunds not implemented")
 }
 func (UnimplementedApiServiceServer) ListTransactions(context.Context, *ListTransactionsRequest) (*ListTransactionsResponse, error) {
@@ -201,7 +201,7 @@ func _ApiService_CreateAccount_Handler(srv interface{}, ctx context.Context, dec
 }
 
 func _ApiService_DepositFunds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TransactionRequest)
+	in := new(DepositFundsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -213,13 +213,13 @@ func _ApiService_DepositFunds_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: ApiService_DepositFunds_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiServiceServer).DepositFunds(ctx, req.(*TransactionRequest))
+		return srv.(ApiServiceServer).DepositFunds(ctx, req.(*DepositFundsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _ApiService_WithdrawFunds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TransactionRequest)
+	in := new(WithdrawFundsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -231,13 +231,13 @@ func _ApiService_WithdrawFunds_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: ApiService_WithdrawFunds_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiServiceServer).WithdrawFunds(ctx, req.(*TransactionRequest))
+		return srv.(ApiServiceServer).WithdrawFunds(ctx, req.(*WithdrawFundsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _ApiService_TransferFunds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TransferRequest)
+	in := new(TransferFundsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -249,7 +249,7 @@ func _ApiService_TransferFunds_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: ApiService_TransferFunds_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiServiceServer).TransferFunds(ctx, req.(*TransferRequest))
+		return srv.(ApiServiceServer).TransferFunds(ctx, req.(*TransferFundsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
