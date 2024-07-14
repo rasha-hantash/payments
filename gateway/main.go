@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/caarlos0/env/v6"
@@ -40,6 +41,7 @@ func main() {
 	}
 	defer grpcClient.Conn.Close()
 
+	slog.Info("Gateway server started", "port", cfg.DefaultPort, "env", cfg.Env, "api_addr", cfg.ApiAddr)
 
 	// Initialize and start the gateway
 	router := mux.NewRouter()
@@ -57,7 +59,7 @@ func main() {
     log.Println("Gateway server listening on :8080")
     log.Fatal(http.ListenAndServe(":8080", router))
 
-	serverAddr := fmt.Sprintf(":%s", cfg.DefaultPort)
-	log.Printf("Starting server on %s", serverAddr)
-	log.Fatal(http.ListenAndServe(serverAddr, router))
+	// serverAddr := fmt.Sprintf(":%s", cfg.DefaultPort)
+	// log.Printf("Starting server on %s", serverAddr)
+	// log.Fatal(http.ListenAndServe(serverAddr, router))
 }

@@ -2,6 +2,7 @@
 package grpc
 
 import (
+	"log/slog"
 	"context"
 	pb "github.com/rasha-hantash/chariot-takehome/api/grpc/proto"
 	"github.com/rasha-hantash/chariot-takehome/api/grpc/repository"
@@ -21,6 +22,7 @@ type GrpcService struct {
 // }
 
 func (g *GrpcService) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.User, error) {
+	slog.Info("api - creating user")
 	user := &repository.User{
 		Email: req.Email,
 		//FirstName: req.FirstName,

@@ -81,7 +81,7 @@ func main() {
 	}
 	slog.Info("starting grpc", "port", c.ServerPort)
 	
-	listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", c.ServerPort))
+	listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", c.ServerPort))
 	if err != nil {
 		slog.Error("failed to start listener for grpc", "error", err)
 		os.Exit(1)

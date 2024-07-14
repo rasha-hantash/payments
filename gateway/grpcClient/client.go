@@ -16,14 +16,15 @@ type ApiClient struct {
 }
 
 func NewApiClient(serverAddr string) (*ApiClient, error) {
-	slog.Info("connecting to claims client", "addr", serverAddr)
+	slog.Info("connecting to api client", "addr", serverAddr)
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	conn, err := grpc.Dial(serverAddr, opts...)
+	conn, err := grpc.NewClient(serverAddr, opts...)
 	if err != nil {
-		slog.Error("error connection to claims service", err)
+		slog.Error("error connection to api service", err.Error())
 		return nil, nil
 	}
+	
 	return &ApiClient{client: pb.NewApiServiceClient(conn), Conn: conn}, nil
 }
 
@@ -31,7 +32,14 @@ func NewApiClient(serverAddr string) (*ApiClient, error) {
 
 
 func (c *ApiClient) CreateUser(req *pb.CreateUserRequest) (*pb.User, error) {
-    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    slog.Info("gateway - creating user")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
     defer cancel()
-    return c.client.CreateUser(ctx, req)
+	// err := c.Conn.Invoke(ctx, "/api.ApiService/CreateUser", req, nil)
+	user, err := c.client.CreateUser(ctx, req)
+	if err != nil {
+		slog.Error("api - error creating user", "error", err.Error())
+		return nil, err
+	}
+	return user, nil
 }

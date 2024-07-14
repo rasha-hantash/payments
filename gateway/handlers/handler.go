@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log/slog"
 	"encoding/json"
 	"net/http"
 	pb "github.com/rasha-hantash/chariot-takehome/api/grpc/proto"
@@ -8,6 +9,7 @@ import (
 )
 
 func CreateUserHandler(grpcClient *client.ApiClient) http.HandlerFunc {
+	slog.Info("hello")
     return func(w http.ResponseWriter, r *http.Request) {
         var req pb.CreateUserRequest
         if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -15,6 +17,7 @@ func CreateUserHandler(grpcClient *client.ApiClient) http.HandlerFunc {
             return
         }
 
+		
         user, err := grpcClient.CreateUser(&req)
         if err != nil {
             http.Error(w, err.Error(), http.StatusInternalServerError)

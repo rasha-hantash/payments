@@ -15,22 +15,15 @@ services:
     ports:
       - '5438:5432'
     networks:
-      - claimclam
-    # volumes:
-      # copy the sql script to create tables
-      # - ./sql/01_drop_tables.sql:/docker-entrypoint-initdb.d/01_drop_tables.sql
-      #  - ./sql/container_setup/02_create_tables.sql:/docker-entrypoint-initdb.d/02_create_tables.sql
-      #  - ./sql/container_setup/03_add_settlements.sql:/docker-entrypoint-initdb.d/03_add_settlements.sql
-      #  - ./sql/container_setup/05_insert_userprofile.sql:/docker-entrypoint-initdb.d/05_insert_userprofile.sql
-      #  - ./sql/container_setup/04_fill_tables.sql:/docker-entrypoint-initdb.d/04_fill_tables.sql
+      - chariot
   gateway:
     build:
       context: .
-      dockerfile: ./docker/Dockerfile.gateway
+      dockerfile: ./gateway/Dockerfile
     environment:
       - GATEWAY_PORT=8080
       - ENVIRONMENT=local
-      - CLAIMS_SERVICE_ADDR=claims-api
+      - API_SERVICE_ADDR=api:9093
     container_name: gateway-api
     hostname: gateway-api
     ports:
@@ -39,11 +32,11 @@ services:
       - postgres
     restart: unless-stopped
     networks:
-      - claimclam
-  claims:
+      - chariot
+  api:
     build:
       context: .
-      dockerfile: ./docker/Dockerfile.claims
+      dockerfile: ./api/Dockerfile
     environment:
       - CONN_STRING=postgresql://postgres:postgres@postgres:5432/?sslmode=disable
       - DB_USER
@@ -53,16 +46,15 @@ services:
       - DB_NAME
       - PORT=9093
       - MODE=local
-      - AUTHORIZED_AGENT_URL=https://drive.google.com/file/d/authorized_agent
-    container_name: claims-api
-    hostname: claims-api
+    container_name: api
+    hostname: api
     ports:
       - "9093:9093"
     depends_on:
       - postgres
     restart: unless-stopped
     networks:
-      - claimclam
+      - chariot
 volumes:
   pgdata:
 networks:
