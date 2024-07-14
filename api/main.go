@@ -94,10 +94,9 @@ func main() {
 	// Create a gRPC grpc with an interceptor that uses the logger
 	s := grpc.NewServer(grpcOpts...)
 
-	u := repository.NewUserRepository(db.Conn)
-	a := repository.NewAccountRepository(db.Conn)
-	t := repository.NewTransactionRepository(db.Conn)
-	
+	t := repository.NewTransactionRepository(db.Conn, "txn_")
+	a := repository.NewAccountRepository(db.Conn, "acct_")
+	u := repository.NewUserRepository(db.Conn, a, "usr_")
 	
 	pb.RegisterApiServiceServer(s, &service.GrpcService{UserRepo: u, AccountRepo: a, TransactionRepo: t})
 	if err := s.Serve(listener); err != nil {

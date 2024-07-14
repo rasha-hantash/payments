@@ -2,7 +2,6 @@
 package grpc
 
 import (
-	"log/slog"
 	"context"
 	pb "github.com/rasha-hantash/chariot-takehome/api/grpc/proto"
 	"github.com/rasha-hantash/chariot-takehome/api/grpc/repository"
@@ -15,31 +14,18 @@ type GrpcService struct {
 	pb.UnimplementedApiServiceServer
 }
 
-// func NewGrpcService(userRepo *repository.UserRepository) *GrpcService {
-// 	return &GrpcService{
-// 		UserRepo: 
-// 		userRepo}
-// }
-
 func (g *GrpcService) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.User, error) {
-	slog.Info("api - creating user")
 	user := &repository.User{
+		Name: req.Name,
 		Email: req.Email,
-		//FirstName: req.FirstName,
-		//LastName:  req.LastName,
-		// Set IntLedgerAccountId and ExtLedgerAccountId if needed
 	}
 
 	id, err := g.UserRepo.CreateUser(ctx, user)
 	if err != nil {
 		return nil, err
 	}
-
-	return &pb.User{
-		Id: id,
-	}, nil
+	return &pb.User{Id: id}, nil
 }
-
 
 func (g *GrpcService) CreateAccount(ctx context.Context, req *pb.CreateAccountRequest) (*pb.Account, error) {
 	account := &repository.Account{
@@ -51,45 +37,37 @@ func (g *GrpcService) CreateAccount(ctx context.Context, req *pb.CreateAccountRe
 	if err != nil {
 		return nil, err
 	}
-
-	return &pb.Account{
-		Id: id,
-	}, nil
+	return &pb.Account{Id: id}, nil
 }
 
 func (g *GrpcService) DepositFunds(ctx context.Context, req *pb.DepositFundsRequest) (*pb.Transaction, error) {
-	// Get the account
-	// Get the transaction
-	// Update the account
-	// Update the transaction
-	// Return the response
-
-	// id, err := g.TransactionRepo.DepositFunds(ctx, req.userId, req.debitAccount, req.CrediAccount, req.Amount)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	return nil, nil
+	id, err := g.TransactionRepo.DepositFunds(ctx, req.Amount, req.UserId, req.DebitAccountId, req.CreditAccountId)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.Transaction{Id: id}, nil
 }
 
 func (g *GrpcService) WithdrawFunds(ctx context.Context, req *pb.WithdrawFundsRequest) (*pb.Transaction, error) {
-	
-	
-
 	id, err := g.TransactionRepo.WithdrawFunds(ctx, req.Amount, req.UserId, req.DebitAccountId, req.CreditAccountId)
 	if err != nil {
 		return nil, err
 	}
-
-	return &pb.Transaction{
-		Id: id,
-	}, nil
+	return &pb.Transaction{Id: id}, nil
 }
 
 func (g *GrpcService) TransferFunds(ctx context.Context, req *pb.TransferFundsRequest) (*pb.Transaction, error) {
-	// Get the account
-	// Get the transaction
-	// Update the account
-	// Update the transaction
-	// Return the response
-	return nil, nil
+	id, err := g.TransactionRepo.TransferFunds(ctx, req.Amount, req.UserId, req.DebitAccountId, req.CreditAccountId)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.Transaction{Id: id}, nil
+}
+
+func (g *GrpcService) GetAccountBalance(ctx context.Context, req *pb.GetAccountBalanceRequest) (*pb.AccountBalance, error) {
+	balance, err := g.AccountRepo.GetAccountBalance(ctx, req.AccountId)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.AccountBalance{Balance: float64(balance / 100)}, nil
 }

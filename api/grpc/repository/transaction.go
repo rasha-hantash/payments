@@ -4,10 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
+
+	"github.com/rasha-hantash/chariot-takehome/api/pkgs/identifier"
 )
 
 type TransactionRepository struct {
 	db *sql.DB
+	ID identifier.ID
 }
 
 type Transaction struct {
@@ -17,126 +20,16 @@ type Transaction struct {
 	Direction string
 }
 
-// TODO create payment_methods table
-/**
-CREATE TABLE payment_methods (
-    id UUID PRIMARY KEY DEFAULT (uuid_generate_v4()),
-    accounts_id UUID,
-    type TEXT NOT NULL,
-    account_firstname TEXT,
-    account_lastname TEXT,
-    account_number TEXT,
-    routing_number TEXT,
-    bank_name TEXT,
-    bank_account_type TEXT,
-    vendor TEXT,
-    status TEXT,
-    ext_payment_method_id TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT (now()),
-    updated_at TIMESTAMP NOT NULL DEFAULT (now()),
-    deleted_at TIMESTAMP,
-    FOREIGN KEY (account_id) REFERENCES accounts(id)
-);
-**/
-
-func NewTransactionRepository(db *sql.DB) *TransactionRepository {
-	return &TransactionRepository{db: db}
+type TransactionFilter struct {
+	AccountID string
+	Cursor    string
+	Limit     int
 }
 
-// TODO: Add Comment
-func (t *TransactionRepository) DepositFunds(ctx context.Context, amount int64, userId, debitAccountId, creditAccountId string) (string, error) {
-	tx, err := t.db.BeginTx(ctx, nil)
-	if err != nil {
-		return "", err
-	}
-	defer tx.Rollback()
 
-	// Debit entry
-	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5)",
-		debitAccountId, amount, "debit", userId)
-	if err != nil {
-		slog.ErrorContext(ctx, "error while creating debit transaction", "error", err)
-		return "", err
-	}
 
-	// Credit entry
-	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5)",
-		creditAccountId, amount, "credit", userId)
-	if err != nil {
-		slog.ErrorContext(ctx, "error while creating credit transaction", "error", err)
-		return "", err
-	}
-
-	if err = tx.Commit(); err != nil {
-		slog.ErrorContext(ctx, "error while committing transaction", "error", err)
-		return "", err
-	}
-
-	return "success", nil
-}
-
-// TODO: Add Comment
-func (t *TransactionRepository) WithdrawFunds(ctx context.Context, amount int64, userId, debitAccountId, creditAccountId string) (string, error) {
-	tx, err := t.db.BeginTx(ctx, nil)
-	if err != nil {
-		return "", err
-	}
-	defer tx.Rollback()
-
-	// Debit entry
-	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5)",
-		debitAccountId, amount, "debit", userId)
-	if err != nil {
-		slog.ErrorContext(ctx, "error while creating debit transaction", "error", err)
-		return "", err
-	}
-
-	// Credit entry
-	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5)",
-		creditAccountId, amount, "credit", userId)
-	if err != nil {
-		slog.ErrorContext(ctx, "error while creating credit transaction", "error", err)
-		return "", err
-	}
-
-	if err = tx.Commit(); err != nil {
-		slog.ErrorContext(ctx, "error while committing transaction", "error", err)
-		return "", err
-	}
-
-	return "success", nil
-}
-
-// TODO: Add Comment
-func (t *TransactionRepository) TransferFunds(ctx context.Context, amount float64, userId, debitAccountId, creditAccountId string) (string, error) {
-	tx, err := t.db.BeginTx(ctx, nil)
-	if err != nil {
-		return "", err
-	}
-	defer tx.Rollback()
-
-	// Debit entry
-	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5)",
-		debitAccountId, amount, "debit", userId)
-	if err != nil {
-		slog.ErrorContext(ctx, "error while creating debit transaction", "error", err)
-		return "", err
-	}
-
-	// Credit entry
-	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5)",
-		creditAccountId, amount, "credit", userId)
-	if err != nil {
-		slog.ErrorContext(ctx, "error while creating credit transaction", "error", err)
-		return "", err
-	}
-
-	if err = tx.Commit(); err != nil {
-		slog.ErrorContext(ctx, "error while committing transaction", "error", err)
-		return "", err
-	}
-
-	return "success", nil
+func NewTransactionRepository(db *sql.DB, prefix string) *TransactionRepository {
+	return &TransactionRepository{db: db, ID: identifier.ID(prefix)}
 }
 
 func (t *TransactionRepository) ListTransactions(ctx context.Context, filter TransactionFilter) ([]*Transaction, string, error) {
@@ -193,8 +86,45 @@ func (t *TransactionRepository) ListTransactions(ctx context.Context, filter Tra
 	return transactions, nextCursor, nil
 }
 
-type TransactionFilter struct {
-	AccountID string
-	Cursor    string
-	Limit     int
+// TODO: Add Comment
+func (t *TransactionRepository) DepositFunds(ctx context.Context, amount float64, userId, debitAccountId, creditAccountId string) (string, error) {
+	return t.addDoubleEntryTransaction(ctx, amount, debitAccountId, creditAccountId, userId)
 }
+
+// TODO: Add Comment
+func (t *TransactionRepository) WithdrawFunds(ctx context.Context, amount float64, userId, debitAccountId, creditAccountId string) (string, error) {
+	return t.addDoubleEntryTransaction(ctx, amount, debitAccountId, creditAccountId, userId)
+}
+
+// TODO: Add Comment
+func (t *TransactionRepository) TransferFunds(ctx context.Context, amount float64, userId, debitAccountId, creditAccountId string) (string, error) {
+	return t.addDoubleEntryTransaction(ctx, amount, debitAccountId, creditAccountId, userId)
+}
+
+func (t *TransactionRepository) addDoubleEntryTransaction(ctx context.Context, amount float64, debitAccountId, creditAccountId, userId string) (string, error) {
+	tx, err := t.db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+
+	
+	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5)",
+	debitAccountId, amount*100, "debit", userId)
+	if err != nil {
+		slog.ErrorContext(ctx, "error while creating credit transaction", "error", err)
+		return "", err
+	}
+
+	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5)",
+	creditAccountId, amount*100, "credit", userId)
+	if err != nil {
+		slog.ErrorContext(ctx, "error while creating credit transaction", "error", err)
+		return "", err
+	}
+
+	return "success", nil
+}
+
+
+

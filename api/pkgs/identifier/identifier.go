@@ -1,10 +1,9 @@
 package identifier
 
 import (
-	"crypto/rand"
+	// "math/rand"
 	"errors"
 	"math/big"
-	//"strconv"
 	"strings"
 	"time"
 )
@@ -33,17 +32,28 @@ type ID string
 
 var charset = []byte("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
 
-func (i ID) New() (ID, error) {
-	timestamp := encodeBase62(big.NewInt(time.Now().UnixMilli()))
+const (
+	alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	digits   = "0123456789"
+	idLength = 20
+)
 
-	randomBytes := make([]byte, 8)
-	_, err := rand.Read(randomBytes)
-	if err != nil {
-		return "", err
+func (i ID) New() ID {
+	timestamp := time.Now().Format("060102150405") // YYMMDDhhmmss
+	nanoseconds := time.Now().Nanosecond()
+
+	randomPart := make([]byte, idLength-len(string(i))-len(timestamp))
+	for idx := range randomPart {
+		// Use the nanoseconds value to add some entropy
+		if idx%2 == 0 {
+			randomPart[idx] = alphabet[(nanoseconds+idx)%len(alphabet)]
+		} else {
+			randomPart[idx] = digits[(nanoseconds+idx)%len(digits)]
+		}
 	}
-	random := encodeBase62(new(big.Int).SetBytes(randomBytes))
 
-	return ID(timestamp + string(separatorChar) + random[:randomLength]), nil
+	id := string(i) + timestamp + string(randomPart)
+	return ID(id)
 }
 
 func (i ID) FromString(s string) (ID, error) {

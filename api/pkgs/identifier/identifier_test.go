@@ -8,10 +8,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	id, err := ID("").New()
-	if err != nil {
-		t.Fatalf("New() returned an error: %v", err)
-	}
+	id := ID("prefix").New()
 
 	if len(id) != timestampLength+1+randomLength {
 		t.Errorf("New() returned ID of incorrect length. Got %d, want %d", len(id), timestampLength+1+randomLength)

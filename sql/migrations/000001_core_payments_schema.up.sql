@@ -2,7 +2,7 @@ CREATE EXTENSION IF NOT EXISTS citext;
 
 -- Create users table
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY,
     name text NOT NULL,
     email citext UNIQUE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -11,25 +11,51 @@ CREATE TABLE users (
 
 -- Create accounts table
 CREATE TABLE accounts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id),
+    id TEXT PRIMARY KEY,
+    user_id TEXT REFERENCES users(id),
     account_type text NOT NULL,
-    balance BIGINT NOT NULL DEFAULT 0,
+    account_state text NOT NULL, -- e.g., 'open', 'closed', 'frozen'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE payment_methods (
+    id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    method_type VARCHAR(50) NOT NULL, -- e.g., 'ACH', 'paypal', 'venmo'
+    account_number VARCHAR(255),
+    routing_number VARCHAR(255),
+    card_number VARCHAR(255),
+    expiration_date DATE,
+    is_verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create transactions table
 CREATE TABLE transactions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_id UUID NOT NULL REFERENCES accounts(id),
+    id TEXT PRIMARY KEY,
+    external_payment_method_id INTEGER,
+    is_internal BOOLEAN NOT NULL,
+    amount BIGINT NOT NULL,
+    state text NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ledger_entries (
+    id TEXT PRIMARY KEY ,
+    transaction_id TEXT NOT NULL REFERENCES transactions(id),
+    custom_id TEXT NOT NULL,
+    account_id TEXT NOT NULL REFERENCES accounts(id),
     direction text NOT NULL,
     amount BIGINT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create index on transactions for faster querying
-CREATE INDEX idx_transactions_account_id ON transactions(account_id);
+
+
+-- -- Create index on transactions for faster querying
+-- CREATE INDEX idx_transactions_account_id ON transactions(account_id);
 
 -- Create function to update updated_at column
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -44,6 +70,6 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_accounts_updated_at BEFORE UPDATE ON accounts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- add history 
--- add generate_uuid4()
+-- add history triggers for all tables 
+-- add trigger to block updates on ledger 
 -- TODO add COMMENT ON statements
