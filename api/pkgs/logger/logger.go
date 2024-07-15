@@ -39,8 +39,7 @@ func ContextPropagationUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-// Handle adds contextual attributes to the Record before calling the underlying
-// handler
+// Handle adds contextual attributes to the Record before calling the underlying handler
 func (h ContextHandler) Handle(ctx context.Context, r slog.Record) error {
 	if attrs, ok := ctx.Value(slogFields).([]slog.Attr); ok {
 		for _, v := range attrs {

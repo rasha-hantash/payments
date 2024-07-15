@@ -4,6 +4,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 
 	"github.com/rasha-hantash/chariot-takehome/api/pkgs/identifier"
 )
@@ -40,10 +41,12 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *User) (string, er
 
 	intAccountId, err := r.accountRepo.CreateAccount(ctx, intAccount)
 	if err != nil {
+		slog.ErrorContext(ctx, "error while creating internal account", "error", err)
 		return "", err
 	}
 	extAccountId, err := r.accountRepo.CreateAccount(ctx, extAccount)
 	if err != nil {
+		slog.ErrorContext(ctx, "error while creating external account", "error", err)
 		return "", err
 	}
 
@@ -58,6 +61,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *User) (string, er
         RETURNING id
     `, user.Email, user.Name, user.IntLedgerAccountId, user.ExtLedgerAccountId).Scan(&userId)
 	if err != nil {
+		slog.ErrorContext(ctx, "error while creating user", "error", err)
 		return "", err
 	}
 

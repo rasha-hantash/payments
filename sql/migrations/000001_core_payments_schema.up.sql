@@ -6,7 +6,8 @@ CREATE TABLE users (
     name text NOT NULL,
     email citext UNIQUE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    history JSONB[] DEFAULT '{}'
 );
 
 -- Create accounts table
@@ -16,7 +17,8 @@ CREATE TABLE accounts (
     account_type text NOT NULL,
     account_state text NOT NULL, -- e.g., 'open', 'closed', 'frozen'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    history JSONB[] DEFAULT '{}'
 );
 
 CREATE TABLE payment_methods (
@@ -29,7 +31,8 @@ CREATE TABLE payment_methods (
     expiration_date DATE,
     is_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    history JSONB[] DEFAULT '{}'
 );
 
 -- Create transactions table
@@ -39,7 +42,9 @@ CREATE TABLE transactions (
     is_internal BOOLEAN NOT NULL,
     amount BIGINT NOT NULL,
     state text NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    history JSONB[] DEFAULT '{}'
 );
 
 CREATE TABLE ledger_entries (
@@ -66,10 +71,29 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+
+CREATE OR REPLACE FUNCTION history_trigger_function()
+    RETURNS trigger
+    LANGUAGE 'plpgsql'
+AS $BODY$
+BEGIN
+    NEW.history := array_append(OLD.history, (to_jsonb(OLD) - 'history'));
+    RETURN NEW;
+END;
+$BODY$;
+
 -- Create triggers to automatically update updated_at
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_accounts_updated_at BEFORE UPDATE ON accounts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON transactions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER payment_methods_transactions_updated_at BEFORE UPDATE ON payment_methods FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- add history triggers for all tables 
+
+-- DROP TRIGGER IF EXISTS userprofile_history_trigger_fn on userprofile;
+CREATE TRIGGER users_history_trigger_fn BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE history_trigger_function ();
+CREATE TRIGGER accounts_history_trigger_fn BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE history_trigger_function ();
+CREATE TRIGGER transactions_history_trigger_fn BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE history_trigger_function ();
+CREATE TRIGGER payment_methods_history_trigger_fn BEFORE UPDATE ON payment_methods FOR EACH ROW EXECUTE FUNCTION history_trigger_function();
+
 -- add trigger to block updates on ledger 
 -- TODO add COMMENT ON statements

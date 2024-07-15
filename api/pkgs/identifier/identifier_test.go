@@ -1,29 +1,65 @@
 package identifier
 
 import (
-	"bytes"
-	"math/big"
-	"strings"
+	"time"
 	"testing"
 )
 
 func TestNew(t *testing.T) {
-	id := ID("prefix").New()
-
-	if len(id) != timestampLength+1+randomLength {
-		t.Errorf("New() returned ID of incorrect length. Got %d, want %d", len(id), timestampLength+1+randomLength)
+	tests := []struct {
+		name   string
+		prefix ID
+	}{
+		{"With acct_ prefix", "acct_"},
+		{"With user_ prefix", "user_"},
+		{"With txn_ prefix", "txn_"},
 	}
 
-	parts := strings.Split(string(id), string(separatorChar))
-	if len(parts) != 2 {
-		t.Errorf("New() returned ID with incorrect format. Got %s", id)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			id := tt.prefix.New()
 
-	if len(parts[0]) != timestampLength || len(parts[1]) != randomLength {
-		t.Errorf("New() returned ID with incorrect part lengths. Got %d and %d, want %d and %d",
-			len(parts[0]), len(parts[1]), timestampLength, randomLength)
+			// Check that the ID starts with the correct prefix
+			if !hasPrefix(string(id), string(tt.prefix)) {
+				t.Errorf("New() = %v, does not start with prefix %v", id, tt.prefix)
+			}
+
+			// Check that the total length of the ID is correct
+			if len(id) != idLength {
+				t.Errorf("New() = %v, length = %d, want length = %d", id, len(id), idLength)
+			}
+
+			// Extract the timestamp and random part from the ID
+			timestamp := string(id[len(tt.prefix) : len(tt.prefix)+12])
+			randomPart := string(id[len(tt.prefix)+12:])
+
+			// Validate the timestamp part
+			_, err := time.Parse("060102150405", timestamp)
+			if err != nil {
+				t.Errorf("New() = %v, invalid timestamp = %v", id, timestamp)
+			}
+
+			// Validate the random part
+			for idx, char := range randomPart {
+				if idx%2 == 0 {
+					if !contains(alphabet, char) {
+						t.Errorf("New() = %v, invalid random part character at %d = %c", id, idx, char)
+					}
+				} else {
+					if !contains(digits, char) {
+						t.Errorf("New() = %v, invalid random part character at %d = %c", id, idx, char)
+					}
+				}
+			}
+		})
 	}
 }
+
+func hasPrefix(s, prefix string) bool {
+	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
+}
+
+
 
 func TestFromString(t *testing.T) {
 	tests := []struct {
@@ -31,7 +67,7 @@ func TestFromString(t *testing.T) {
 		input   string
 		wantErr bool
 	}{
-		{"Valid ID", "1234567890-123456789", false},
+		{"Valid ID", "acct_240714212559C7E", false},
 		{"Invalid length", "123456789-12345678", true},
 		{"Invalid separator", "1234567890123456789", true},
 		{"Invalid characters", "123456789O-123456789", true},
@@ -52,16 +88,17 @@ func TestFromBytes(t *testing.T) {
 		name  string
 		input []byte
 		want  ID
+		wantErr bool
 	}{
-		{"Valid bytes", []byte("1234567890-123456789"), "1234567890-123456789"},
-		{"Empty bytes", []byte{}, ""},
+		{"Valid bytes", []byte("acct_240714212559C7E"), "acct_240714212559C7E", false},
+		{"Empty bytes", []byte{}, "", true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ID("").FromBytes(tt.input)
-			if err != nil {
-				t.Errorf("FromBytes() error = %v", err)
+			got, err := ID("acct_").FromBytes(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FromBytes() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
@@ -73,96 +110,22 @@ func TestFromBytes(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	tests := []struct {
-		name    string
-		id      ID
-		want    bool
-		wantErr bool
+		name string
+		id   ID
+		want bool
 	}{
-		{"Valid ID", "1234567890-123456789", true, false},
-		{"Invalid length", "123456789-12345678", false, true},
-		{"Invalid separator", "1234567890123456789", false, true},
-		{"Invalid characters", "123456789O-123456789", false, true},
+		{"Valid ID", "acct_240714212559C7E", true},
+		{"Invalid length", "acct_240714212559A1", false},
+		{"Invalid characters", "acct_240714212559A1B@", false},
+		{"Invalid timestamp", "acct_991231123059A1B2", false},
+		{"Missing underscore", "acct240714212559A1B2", false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.id.Validate(tt.id)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := tt.id.Validate()
 			if got != tt.want {
 				t.Errorf("Validate() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestEncodeBase62(t *testing.T) {
-	tests := []struct {
-		name  string
-		input *big.Int
-		want  string
-	}{
-		{"Zero", big.NewInt(0), "0000000000"},
-		{"Positive number", big.NewInt(12345), "0000012345"},
-		{"Large number", new(big.Int).SetBytes([]byte{255, 255, 255, 255}), "2LKcb1ZMR"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := encodeBase62(tt.input); got != tt.want {
-				t.Errorf("encodeBase62() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestDecodeBase62(t *testing.T) {
-	tests := []struct {
-		name    string
-		input   string
-		want    *big.Int
-		wantErr bool
-	}{
-		{"Zero", "0000000000", big.NewInt(0), false},
-		{"Positive number", "0000012345", big.NewInt(12345), false},
-		{"Large number", "2LKcb1ZMR", new(big.Int).SetBytes([]byte{255, 255, 255, 255}), false},
-		{"Invalid character", "000001234O", nil, true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := decodeBase62(tt.input)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("decodeBase62() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if tt.want != nil && got.Cmp(tt.want) != 0 {
-				t.Errorf("decodeBase62() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestReverse(t *testing.T) {
-	tests := []struct {
-		name  string
-		input []byte
-		want  []byte
-	}{
-		{"Empty slice", []byte{}, []byte{}},
-		{"Single element", []byte{1}, []byte{1}},
-		{"Multiple elements", []byte{1, 2, 3, 4, 5}, []byte{5, 4, 3, 2, 1}},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			input := make([]byte, len(tt.input))
-			copy(input, tt.input)
-			reverse(input)
-			if !bytes.Equal(input, tt.want) {
-				t.Errorf("reverse() = %v, want %v", input, tt.want)
 			}
 		})
 	}

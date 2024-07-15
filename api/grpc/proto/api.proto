@@ -21,7 +21,7 @@ message DepositFundsRequest {
   string user_id = 2;
   string debit_account_id = 3;
   string credit_account_id = 4;
-
+  string idempotency_key = 5;
 }
 
 
@@ -30,7 +30,7 @@ message WithdrawFundsRequest {
   string user_id = 2;
   string debit_account_id = 3;
   string credit_account_id = 4;
-
+  string idempotency_key = 5;
 }
 
 message TransferFundsRequest {
@@ -38,7 +38,7 @@ message TransferFundsRequest {
   string user_id = 2;
   string debit_account_id = 3;
   string credit_account_id = 4;
-
+  string idempotency_key = 5;
 }
 
 message User {

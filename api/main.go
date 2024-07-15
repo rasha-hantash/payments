@@ -91,7 +91,7 @@ func main() {
 	grpcOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(logger.ContextPropagationUnaryServerInterceptor()),
 	}
-	// Create a gRPC grpc with an interceptor that uses the logger
+	// Create a gRPC with an interceptor that uses the logger
 	s := grpc.NewServer(grpcOpts...)
 
 	t := repository.NewTransactionRepository(db.Conn, "txn_")
