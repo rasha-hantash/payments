@@ -15,40 +15,39 @@ var (
 )
 
 func CreateUserHandler(grpcClient *client.ApiClient) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        var req pb.CreateUserRequest
-        if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-            http.Error(w, err.Error(), http.StatusBadRequest)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req pb.CreateUserRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-        user, err := grpcClient.CreateUser(&req)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
+		user, err := grpcClient.CreateUser(&req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-        json.NewEncoder(w).Encode(user)
-    }
+		json.NewEncoder(w).Encode(user)
+	}
 }
 
-
 func CreateAccountHandler(grpcClient *client.ApiClient) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        var req pb.CreateAccountRequest
-        if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-            http.Error(w, err.Error(), http.StatusBadRequest)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req pb.CreateAccountRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-        account, err := grpcClient.CreateAccount(&req)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
+		account, err := grpcClient.CreateAccount(&req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-        json.NewEncoder(w).Encode(account)
-    }
+		json.NewEncoder(w).Encode(account)
+	}
 }
 
 func DepositFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
@@ -82,12 +81,12 @@ func DepositFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 }
 
 func WithdrawFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        var req pb.WithdrawFundsRequest
-        if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-            http.Error(w, err.Error(), http.StatusBadRequest)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req pb.WithdrawFundsRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
 		mu.Lock()
 		defer mu.Unlock()
@@ -99,25 +98,25 @@ func WithdrawFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 			return
 		}
 
-        transaction, err := grpcClient.WithdrawFunds(&req)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
+		transaction, err := grpcClient.WithdrawFunds(&req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		idempotencyKeys[req.IdempotencyKey] = true
 
-        json.NewEncoder(w).Encode(transaction)
-    }
+		json.NewEncoder(w).Encode(transaction)
+	}
 }
 
 func TransferFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        var req pb.TransferFundsRequest
-        if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-            http.Error(w, err.Error(), http.StatusBadRequest)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req pb.TransferFundsRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
 		mu.Lock()
 		defer mu.Unlock()
@@ -129,50 +128,50 @@ func TransferFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 			return
 		}
 
-        transaction, err := grpcClient.TransferFunds(&req)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
+		transaction, err := grpcClient.TransferFunds(&req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		idempotencyKeys[req.IdempotencyKey] = true
 
-        json.NewEncoder(w).Encode(transaction)
-    }
+		json.NewEncoder(w).Encode(transaction)
+	}
 }
 
 func ListTransactionsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        var req pb.ListTransactionsRequest
-        if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-            http.Error(w, err.Error(), http.StatusBadRequest)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req pb.ListTransactionsRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-        transactions, err := grpcClient.ListTransactions(&req)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
+		transactions, err := grpcClient.ListTransactions(&req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-        json.NewEncoder(w).Encode(transactions)
-    }
+		json.NewEncoder(w).Encode(transactions)
+	}
 }
 
 func GetAccountBalanceHandler(grpcClient *client.ApiClient) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        var req pb.GetAccountBalanceRequest
-        if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-            http.Error(w, err.Error(), http.StatusBadRequest)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req pb.GetAccountBalanceRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-        balance, err := grpcClient.GetAccountBalance(&req)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
+		balance, err := grpcClient.GetAccountBalance(&req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-        json.NewEncoder(w).Encode(balance)
-    }
+		json.NewEncoder(w).Encode(balance)
+	}
 }

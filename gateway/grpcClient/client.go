@@ -1,8 +1,8 @@
 package grpcClient
 
 import (
-	"log/slog"
 	"context"
+	"log/slog"
 
 	pb "github.com/rasha-hantash/chariot-takehome/api/grpc/proto"
 	"google.golang.org/grpc"
@@ -23,10 +23,9 @@ func NewApiClient(serverAddr string) (*ApiClient, error) {
 		slog.Error("error connection to api service", "error", err.Error())
 		return nil, nil
 	}
-	
+
 	return &ApiClient{client: pb.NewApiServiceClient(conn), Conn: conn}, nil
 }
-
 
 func (c *ApiClient) CreateUser(req *pb.CreateUserRequest) (*pb.User, error) {
 	ctx := context.Background()
@@ -58,7 +57,6 @@ func (c *ApiClient) DepositFunds(req *pb.DepositFundsRequest) (*pb.Transaction, 
 	return resp, nil
 }
 
-
 func (c *ApiClient) WithdrawFunds(req *pb.WithdrawFundsRequest) (*pb.Transaction, error) {
 	ctx := context.Background()
 	resp, err := c.client.WithdrawFunds(ctx, req)
@@ -88,7 +86,6 @@ func (c *ApiClient) ListTransactions(req *pb.ListTransactionsRequest) (*pb.ListT
 	}
 	return resp, nil
 }
-
 
 func (c *ApiClient) GetAccountBalance(req *pb.GetAccountBalanceRequest) (*pb.AccountBalance, error) {
 	ctx := context.Background()

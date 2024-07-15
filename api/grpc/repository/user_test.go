@@ -10,11 +10,11 @@ import (
 
 func TestCreateUser(t *testing.T) {
 	tests := []struct {
-		name         string
-		input        *User
-		mockSetup    func(mock sqlmock.Sqlmock)
-		expectedID   string
-		expectedErr  error
+		name        string
+		input       *User
+		mockSetup   func(mock sqlmock.Sqlmock)
+		expectedID  string
+		expectedErr error
 	}{
 		{
 			name: "successful insert",
@@ -62,7 +62,7 @@ func TestCreateUser(t *testing.T) {
 
 			accountRepo := NewAccountRepository(db, "acct_")
 			userRepo := NewUserRepository(db, accountRepo, "usr_")
-			
+
 			id, err := userRepo.CreateUser(context.Background(), tt.input)
 
 			if id != tt.expectedID {

@@ -1,10 +1,10 @@
 package identifier
 
 import (
-	"strings"
 	"errors"
-	"unicode"
+	"strings"
 	"time"
+	"unicode"
 )
 
 type Identifier[T any] interface {
@@ -18,9 +18,9 @@ type Identifier[T any] interface {
 type ID string
 
 const (
-	alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	digits   = "0123456789"
-	idLength = 20
+	alphabet        = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	digits          = "0123456789"
+	idLength        = 20
 	timestampLength = 12
 )
 
@@ -82,7 +82,6 @@ func (i ID) Validate() bool {
 	// Extract the timestamp and random part from the remaining part
 	timestamp := remaining[:timestampLength]
 	randomPart := remaining[timestampLength:]
-
 
 	// Validate the timestamp part
 	if _, err := time.Parse("060102150405", timestamp); err != nil {

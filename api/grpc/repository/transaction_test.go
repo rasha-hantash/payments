@@ -10,20 +10,20 @@ import (
 
 func TestTransactionRepository_DepositFunds(t *testing.T) {
 	tests := []struct {
-		name           string
-		amount         float64
-		userId         string
-		debitAccountId string
+		name            string
+		amount          float64
+		userId          string
+		debitAccountId  string
 		creditAccountId string
-		mockSetup      func(mock sqlmock.Sqlmock)
-		expectedResult string
-		expectedErr    error
+		mockSetup       func(mock sqlmock.Sqlmock)
+		expectedResult  string
+		expectedErr     error
 	}{
 		{
-			name:           "successful deposit",
-			amount:         100,
-			userId:         "user-1",
-			debitAccountId: "debit-1",
+			name:            "successful deposit",
+			amount:          100,
+			userId:          "user-1",
+			debitAccountId:  "debit-1",
 			creditAccountId: "credit-1",
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
@@ -39,10 +39,10 @@ func TestTransactionRepository_DepositFunds(t *testing.T) {
 			expectedErr:    nil,
 		},
 		{
-			name:           "insert error on debit",
-			amount:         100,
-			userId:         "user-1",
-			debitAccountId: "debit-1",
+			name:            "insert error on debit",
+			amount:          100,
+			userId:          "user-1",
+			debitAccountId:  "debit-1",
 			creditAccountId: "credit-1",
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
@@ -55,10 +55,10 @@ func TestTransactionRepository_DepositFunds(t *testing.T) {
 			expectedErr:    sql.ErrConnDone,
 		},
 		{
-			name:           "insert error on credit",
-			amount:         100,
-			userId:         "user-1",
-			debitAccountId: "debit-1",
+			name:            "insert error on credit",
+			amount:          100,
+			userId:          "user-1",
+			debitAccountId:  "debit-1",
 			creditAccountId: "credit-1",
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
@@ -104,20 +104,20 @@ func TestTransactionRepository_DepositFunds(t *testing.T) {
 
 func TestTransactionRepository_WithdrawFunds(t *testing.T) {
 	tests := []struct {
-		name           string
-		amount         float64
-		userId         string
-		debitAccountId string
+		name            string
+		amount          float64
+		userId          string
+		debitAccountId  string
 		creditAccountId string
-		mockSetup      func(mock sqlmock.Sqlmock)
-		expectedResult string
-		expectedErr    error
+		mockSetup       func(mock sqlmock.Sqlmock)
+		expectedResult  string
+		expectedErr     error
 	}{
 		{
-			name:           "successful withdraw",
-			amount:         100,
-			userId:         "user-1",
-			debitAccountId: "debit-1",
+			name:            "successful withdraw",
+			amount:          100,
+			userId:          "user-1",
+			debitAccountId:  "debit-1",
 			creditAccountId: "credit-1",
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
@@ -133,10 +133,10 @@ func TestTransactionRepository_WithdrawFunds(t *testing.T) {
 			expectedErr:    nil,
 		},
 		{
-			name:           "insert error on debit",
-			amount:         100,
-			userId:         "user-1",
-			debitAccountId: "debit-1",
+			name:            "insert error on debit",
+			amount:          100,
+			userId:          "user-1",
+			debitAccountId:  "debit-1",
 			creditAccountId: "credit-1",
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
@@ -149,10 +149,10 @@ func TestTransactionRepository_WithdrawFunds(t *testing.T) {
 			expectedErr:    sql.ErrConnDone,
 		},
 		{
-			name:           "insert error on credit",
-			amount:         100,
-			userId:         "user-1",
-			debitAccountId: "debit-1",
+			name:            "insert error on credit",
+			amount:          100,
+			userId:          "user-1",
+			debitAccountId:  "debit-1",
 			creditAccountId: "credit-1",
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
@@ -198,20 +198,20 @@ func TestTransactionRepository_WithdrawFunds(t *testing.T) {
 
 func TestTransactionRepository_TransferFunds(t *testing.T) {
 	tests := []struct {
-		name           string
-		amount         float64
-		userId         string
-		debitAccountId string
+		name            string
+		amount          float64
+		userId          string
+		debitAccountId  string
 		creditAccountId string
-		mockSetup      func(mock sqlmock.Sqlmock)
-		expectedResult string
-		expectedErr    error
+		mockSetup       func(mock sqlmock.Sqlmock)
+		expectedResult  string
+		expectedErr     error
 	}{
 		{
-			name:           "successful transfer",
-			amount:         100.50,
-			userId:         "user-1",
-			debitAccountId: "debit-1",
+			name:            "successful transfer",
+			amount:          100.50,
+			userId:          "user-1",
+			debitAccountId:  "debit-1",
 			creditAccountId: "credit-1",
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
@@ -227,10 +227,10 @@ func TestTransactionRepository_TransferFunds(t *testing.T) {
 			expectedErr:    nil,
 		},
 		{
-			name:           "insert error on debit",
-			amount:         100.50,
-			userId:         "user-1",
-			debitAccountId: "debit-1",
+			name:            "insert error on debit",
+			amount:          100.50,
+			userId:          "user-1",
+			debitAccountId:  "debit-1",
 			creditAccountId: "credit-1",
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
@@ -243,10 +243,10 @@ func TestTransactionRepository_TransferFunds(t *testing.T) {
 			expectedErr:    sql.ErrConnDone,
 		},
 		{
-			name:           "insert error on credit",
-			amount:         100.50,
-			userId:         "user-1",
-			debitAccountId: "debit-1",
+			name:            "insert error on credit",
+			amount:          100.50,
+			userId:          "user-1",
+			debitAccountId:  "debit-1",
 			creditAccountId: "credit-1",
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()

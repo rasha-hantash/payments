@@ -8,15 +8,15 @@ import (
 )
 
 type GrpcService struct {
-	UserRepo *repository.UserRepository
-	AccountRepo *repository.AccountRepository
+	UserRepo        *repository.UserRepository
+	AccountRepo     *repository.AccountRepository
 	TransactionRepo *repository.TransactionRepository
 	pb.UnimplementedApiServiceServer
 }
 
 func (g *GrpcService) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.User, error) {
 	user := &repository.User{
-		Name: req.Name,
+		Name:  req.Name,
 		Email: req.Email,
 	}
 
