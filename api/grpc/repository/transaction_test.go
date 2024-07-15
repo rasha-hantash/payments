@@ -2,392 +2,320 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	"github.com/stretchr/testify/assert"
+	"log"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/rasha-hantash/chariot-takehome/api/pkgs/test"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestTransactionRepository_DepositFunds(t *testing.T) {
+	db, container := test.SetupAndFillDatabaseContainer("seed_transactions_deposit_funds.sql")
+	defer func(container testcontainers.Container) {
+		err := test.TeardownDatabaseContainer(container)
+		if err != nil {
+			log.Fatalf("failed to close container down: %v\n", err)
+		}
+	}(container)
+	defer db.Close()
+
 	tests := []struct {
 		name            string
 		amount          float64
 		userId          string
 		debitAccountId  string
 		creditAccountId string
-		mockSetup       func(mock sqlmock.Sqlmock)
 		expectedResult  string
-		expectedErr     error
+		wantErr         bool
 	}{
 		{
 			name:            "successful deposit",
 			amount:          100,
-			userId:          "user-1",
-			debitAccountId:  "debit-1",
-			creditAccountId: "credit-1",
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("debit-1", 100, "debit", "user-1").
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("credit-1", 100, "credit", "user-1").
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectCommit()
-			},
-			expectedResult: "success",
-			expectedErr:    nil,
+			userId:          "usr_1",
+			debitAccountId:  "acct_1",
+			creditAccountId: "acct_2",
+			expectedResult:  "success",
+			wantErr:         false,
 		},
 		{
-			name:            "insert error on debit",
+			name:            "insert error,  debit account does not exist",
 			amount:          100,
-			userId:          "user-1",
-			debitAccountId:  "debit-1",
-			creditAccountId: "credit-1",
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("debit-1", 100, "debit", "user-1").
-					WillReturnError(sql.ErrConnDone)
-				mock.ExpectRollback()
-			},
-			expectedResult: "",
-			expectedErr:    sql.ErrConnDone,
+			userId:          "usr_2",
+			debitAccountId:  "acct_3",
+			creditAccountId: "acct_4",
+			expectedResult:  "",
+			wantErr:         true,
 		},
 		{
-			name:            "insert error on credit",
+			name:            "insert error, credit account does not exist",
 			amount:          100,
-			userId:          "user-1",
-			debitAccountId:  "debit-1",
-			creditAccountId: "credit-1",
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("debit-1", 100, "debit", "user-1").
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("credit-1", 100, "credit", "user-1").
-					WillReturnError(sql.ErrConnDone)
-				mock.ExpectRollback()
-			},
-			expectedResult: "",
-			expectedErr:    sql.ErrConnDone,
+			userId:          "usr_3",
+			debitAccountId:  "acct_5",
+			creditAccountId: "acct_6",
+			expectedResult:  "",
+			wantErr:         true,
 		},
 	}
 
+	repo := NewTransactionRepository(db, "txn_", "le_")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
-			defer db.Close()
-
-			tt.mockSetup(mock)
-
-			repo := NewTransactionRepository(db, "txn")
 			result, err := repo.DepositFunds(context.Background(), tt.amount, tt.userId, tt.debitAccountId, tt.creditAccountId)
 
 			if result != tt.expectedResult {
 				t.Errorf("expected result %v, got %v", tt.expectedResult, result)
 			}
-			if err != tt.expectedErr {
-				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResult, result)
 			}
 
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were unfulfilled expectations: %s", err)
-			}
 		})
 	}
 }
 
 func TestTransactionRepository_WithdrawFunds(t *testing.T) {
+	db, container := test.SetupAndFillDatabaseContainer("seed_transactions_withdraw_funds.sql")
+	defer func(container testcontainers.Container) {
+		err := test.TeardownDatabaseContainer(container)
+		if err != nil {
+			log.Fatalf("failed to close container down: %v\n", err)
+		}
+	}(container)
+	defer db.Close()
+
 	tests := []struct {
 		name            string
 		amount          float64
 		userId          string
 		debitAccountId  string
 		creditAccountId string
-		mockSetup       func(mock sqlmock.Sqlmock)
 		expectedResult  string
-		expectedErr     error
+		wantErr         bool
 	}{
 		{
 			name:            "successful withdraw",
 			amount:          100,
-			userId:          "user-1",
-			debitAccountId:  "debit-1",
-			creditAccountId: "credit-1",
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("debit-1", 100, "debit", "user-1").
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("credit-1", 100, "credit", "user-1").
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectCommit()
-			},
-			expectedResult: "success",
-			expectedErr:    nil,
+			userId:          "usr_1",
+			debitAccountId:  "acct_1",
+			creditAccountId: "acct_2",
+			expectedResult:  "success",
+			wantErr:         false,
 		},
 		{
-			name:            "insert error on debit",
+			name:            "insufficient funds",
 			amount:          100,
-			userId:          "user-1",
-			debitAccountId:  "debit-1",
-			creditAccountId: "credit-1",
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("debit-1", 100, "debit", "user-1").
-					WillReturnError(sql.ErrConnDone)
-				mock.ExpectRollback()
-			},
-			expectedResult: "",
-			expectedErr:    sql.ErrConnDone,
+			userId:          "usr_2",
+			debitAccountId:  "acct_3",
+			creditAccountId: "acct_4",
+			expectedResult:  "",
+			wantErr:         true,
 		},
 		{
-			name:            "insert error on credit",
+			name:            "credit account does not exist",
 			amount:          100,
-			userId:          "user-1",
-			debitAccountId:  "debit-1",
-			creditAccountId: "credit-1",
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("debit-1", 100, "debit", "user-1").
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("credit-1", 100, "credit", "user-1").
-					WillReturnError(sql.ErrConnDone)
-				mock.ExpectRollback()
-			},
-			expectedResult: "",
-			expectedErr:    sql.ErrConnDone,
+			userId:          "usr_3",
+			debitAccountId:  "acct_5",
+			creditAccountId: "acct_6",
+			expectedResult:  "",
+			wantErr:         true,
 		},
 	}
 
+	repo := NewTransactionRepository(db, "txn_", "le_")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
-			defer db.Close()
-
-			tt.mockSetup(mock)
-
-			repo := NewTransactionRepository(db, "txn")
 			result, err := repo.WithdrawFunds(context.Background(), tt.amount, tt.userId, tt.debitAccountId, tt.creditAccountId)
 
 			if result != tt.expectedResult {
 				t.Errorf("expected result %v, got %v", tt.expectedResult, result)
 			}
-			if err != tt.expectedErr {
-				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
-			}
-
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were unfulfilled expectations: %s", err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResult, result)
 			}
 		})
 	}
 }
 
 func TestTransactionRepository_TransferFunds(t *testing.T) {
+	db, container := test.SetupAndFillDatabaseContainer("seed_transactions_withdraw_funds.sql")
+	defer func(container testcontainers.Container) {
+		err := test.TeardownDatabaseContainer(container)
+		if err != nil {
+			log.Fatalf("failed to close container down: %v\n", err)
+		}
+	}(container)
+	defer db.Close()
+
 	tests := []struct {
 		name            string
 		amount          float64
 		userId          string
 		debitAccountId  string
 		creditAccountId string
-		mockSetup       func(mock sqlmock.Sqlmock)
 		expectedResult  string
-		expectedErr     error
+		wantErr         bool
 	}{
 		{
 			name:            "successful transfer",
-			amount:          100.50,
-			userId:          "user-1",
-			debitAccountId:  "debit-1",
-			creditAccountId: "credit-1",
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("debit-1", 100.50, "debit", "user-1").
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("credit-1", 100.50, "credit", "user-1").
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectCommit()
-			},
-			expectedResult: "success",
-			expectedErr:    nil,
+			amount:          100,
+			userId:          "usr_1",
+			debitAccountId:  "acct_1",
+			creditAccountId: "acct_2",
+			expectedResult:  "success",
+			wantErr:         false,
 		},
 		{
-			name:            "insert error on debit",
-			amount:          100.50,
-			userId:          "user-1",
-			debitAccountId:  "debit-1",
-			creditAccountId: "credit-1",
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("debit-1", 100.50, "debit", "user-1").
-					WillReturnError(sql.ErrConnDone)
-				mock.ExpectRollback()
-			},
-			expectedResult: "",
-			expectedErr:    sql.ErrConnDone,
+			name:            "insert error debit insufficient funds",
+			amount:          100,
+			userId:          "usr_2",
+			debitAccountId:  "acct_3",
+			creditAccountId: "acct_4",
+			expectedResult:  "",
+			wantErr:         true,
 		},
 		{
-			name:            "insert error on credit",
-			amount:          100.50,
-			userId:          "user-1",
-			debitAccountId:  "debit-1",
-			creditAccountId: "credit-1",
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("debit-1", 100.50, "debit", "user-1").
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectExec("INSERT INTO transactions").
-					WithArgs("credit-1", 100.50, "credit", "user-1").
-					WillReturnError(sql.ErrConnDone)
-				mock.ExpectRollback()
-			},
-			expectedResult: "",
-			expectedErr:    sql.ErrConnDone,
+			name:            "insert error debit insufficient funds",
+			amount:          100,
+			userId:          "usr_1",
+			debitAccountId:  "acct_5",
+			creditAccountId: "acct_6",
+			expectedResult:  "",
+			wantErr:         true,
 		},
 	}
 
+	repo := NewTransactionRepository(db, "txn_", "le_")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
-			defer db.Close()
-
-			tt.mockSetup(mock)
-
-			repo := NewTransactionRepository(db, "txn")
 			result, err := repo.TransferFunds(context.Background(), tt.amount, tt.userId, tt.debitAccountId, tt.creditAccountId)
 
 			if result != tt.expectedResult {
 				t.Errorf("expected result %v, got %v", tt.expectedResult, result)
 			}
-			if err != tt.expectedErr {
-				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
-			}
-
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were unfulfilled expectations: %s", err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResult, result)
 			}
 		})
 	}
 }
 
 func TestTransactionRepository_ListTransactions(t *testing.T) {
+	db, container := test.SetupAndFillDatabaseContainer("seed_transactions_list_transactions.sql")
+	defer func(container testcontainers.Container) {
+		err := test.TeardownDatabaseContainer(container)
+		if err != nil {
+			log.Fatalf("failed to close container down: %v\n", err)
+		}
+	}(container)
+	defer db.Close()
+
 	tests := []struct {
 		name           string
 		filter         TransactionFilter
-		mockSetup      func(mock sqlmock.Sqlmock)
 		expectedResult []*Transaction
 		expectedCursor string
-		expectedErr    error
+		wantErr        bool
 	}{
 		{
-			name: "successful list with limit",
+			name: "successful list for acct_1",
 			filter: TransactionFilter{
-				AccountID: "acc-1",
+				AccountID: "acct_1",
 				Cursor:    "",
-				Limit:     2,
-			},
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "account_id", "amount", "direction"}).
-					AddRow("1", "acc-1", 100, "debit").
-					AddRow("2", "acc-1", 200, "credit").
-					AddRow("3", "acc-1", 300, "debit")
-				mock.ExpectQuery("SELECT id, account_id, amount, direction FROM transactions WHERE 1=1 AND account_id = \\? ORDER BY id ASC LIMIT \\?").
-					WithArgs("acc-1", 3).
-					WillReturnRows(rows)
+				Limit:     5,
 			},
 			expectedResult: []*Transaction{
-				{Id: "1", AccountId: "acc-1", Amount: 100, Direction: "debit"},
-				{Id: "2", AccountId: "acc-1", Amount: 200, Direction: "credit"},
+				{Id: "txn_1", AccountId: "acct_1", Amount: 110, Direction: "debit"},
+				{Id: "txn_3", AccountId: "acct_1", Amount: 130, Direction: "credit"},
+				{Id: "txn_4", AccountId: "acct_1", Amount: 140, Direction: "debit"},
+				{Id: "txn_6", AccountId: "acct_1", Amount: 160, Direction: "credit"},
+				{Id: "txn_7", AccountId: "acct_1", Amount: 170, Direction: "debit"},
 			},
-			expectedCursor: "3",
-			expectedErr:    nil,
+			expectedCursor: "txn_9",
+			wantErr:        false,
+		},
+		{
+			name: "successful list for acct_2",
+			filter: TransactionFilter{
+				AccountID: "acct_2",
+				Cursor:    "",
+				Limit:     5,
+			},
+			expectedResult: []*Transaction{
+				{Id: "txn_1", AccountId: "acct_2", Amount: 110, Direction: "credit"},
+				{Id: "txn_2", AccountId: "acct_2", Amount: 120, Direction: "debit"},
+				{Id: "txn_4", AccountId: "acct_2", Amount: 140, Direction: "credit"},
+				{Id: "txn_5", AccountId: "acct_2", Amount: 150, Direction: "debit"},
+				{Id: "txn_7", AccountId: "acct_2", Amount: 170, Direction: "credit"},
+			},
+			expectedCursor: "txn_8",
+			wantErr:        false,
+		},
+		{
+			name: "successful list for acct_3",
+			filter: TransactionFilter{
+				AccountID: "acct_3",
+				Cursor:    "",
+				Limit:     5,
+			},
+			expectedResult: []*Transaction{
+				{Id: "txn_2", AccountId: "acct_3", Amount: 120, Direction: "credit"},
+				{Id: "txn_3", AccountId: "acct_3", Amount: 130, Direction: "debit"},
+				{Id: "txn_5", AccountId: "acct_3", Amount: 150, Direction: "credit"},
+				{Id: "txn_6", AccountId: "acct_3", Amount: 160, Direction: "debit"},
+				{Id: "txn_8", AccountId: "acct_3", Amount: 180, Direction: "credit"},
+			},
+			expectedCursor: "txn_9",
+			wantErr:        false,
+		},
+		{
+			name: "successful list with cursor",
+			filter: TransactionFilter{
+				AccountID: "acct_1",
+				Cursor:    "txn_7",
+				Limit:     3,
+			},
+			expectedResult: []*Transaction{
+				{Id: "txn_9", AccountId: "acct_1", Amount: 190, Direction: "credit"},
+				{Id: "txn_10", AccountId: "acct_1", Amount: 200, Direction: "debit"},
+				{Id: "txn_12", AccountId: "acct_1", Amount: 220, Direction: "credit"},
+			},
+			expectedCursor: "txn_13",
+			wantErr:        false,
 		},
 		{
 			name: "no transactions found",
 			filter: TransactionFilter{
-				AccountID: "acc-2",
+				AccountID: "non_existent_account",
 				Cursor:    "",
-				Limit:     2,
-			},
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "account_id", "amount", "direction"})
-				mock.ExpectQuery("SELECT id, account_id, amount, direction FROM transactions WHERE 1=1 AND account_id = \\? ORDER BY id ASC LIMIT \\?").
-					WithArgs("acc-2", 3).
-					WillReturnRows(rows)
+				Limit:     5,
 			},
 			expectedResult: []*Transaction{},
 			expectedCursor: "",
-			expectedErr:    nil,
-		},
-		{
-			name: "query error",
-			filter: TransactionFilter{
-				AccountID: "acc-3",
-				Cursor:    "",
-				Limit:     2,
-			},
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT id, account_id, amount, direction FROM transactions WHERE 1=1 AND account_id = \\? ORDER BY id ASC LIMIT \\?").
-					WithArgs("acc-3", 3).
-					WillReturnError(sql.ErrConnDone)
-			},
-			expectedResult: nil,
-			expectedCursor: "",
-			expectedErr:    sql.ErrConnDone,
+			wantErr:        false,
 		},
 	}
 
+	repo := NewTransactionRepository(db, "txn_", "le_")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
-			defer db.Close()
-
-			tt.mockSetup(mock)
-
-			repo := NewTransactionRepository(db, "txn")
 			result, cursor, err := repo.ListTransactions(context.Background(), tt.filter)
 
-			if len(result) != len(tt.expectedResult) {
-				t.Errorf("expected result length %v, got %v", len(tt.expectedResult), len(result))
+			if tt.wantErr {
+				assert.Error(t, err)
 			} else {
-				for i := range result {
-					if *result[i] != *tt.expectedResult[i] {
-						t.Errorf("expected result %v, got %v", tt.expectedResult[i], result[i])
-					}
-				}
-			}
-			if cursor != tt.expectedCursor {
-				t.Errorf("expected cursor %v, got %v", tt.expectedCursor, cursor)
-			}
-			if err != tt.expectedErr {
-				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
-			}
-
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were unfulfilled expectations: %s", err)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResult, result)
+				assert.Equal(t, tt.expectedCursor, cursor)
 			}
 		})
 	}

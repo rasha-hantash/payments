@@ -3,13 +3,16 @@ CREATE EXTENSION IF NOT EXISTS citext;
 -- Create users table
 CREATE TABLE users (
     id TEXT PRIMARY KEY,
-    name text NOT NULL,
+    name TEXT NOT NULL,
     email citext UNIQUE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by TEXT NOT NULL DEFAULT 'system',
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_by TEXT NOT NULL DEFAULT 'system',
     history JSONB[] DEFAULT '{}'
 );
 
+-- todo remove account_type
 -- Create accounts table
 CREATE TABLE accounts (
     id TEXT PRIMARY KEY,
@@ -17,7 +20,9 @@ CREATE TABLE accounts (
     account_type text NOT NULL,
     account_state text NOT NULL, -- e.g., 'open', 'closed', 'frozen'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by TEXT NOT NULL DEFAULT 'system',
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_by TEXT NOT NULL DEFAULT 'system',
     history JSONB[] DEFAULT '{}'
 );
 
@@ -30,31 +35,35 @@ CREATE TABLE payment_methods (
     card_number VARCHAR(255),
     expiration_date DATE,
     is_verified BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by TEXT NOT NULL DEFAULT 'system',
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_by TEXT NOT NULL DEFAULT 'system',
     history JSONB[] DEFAULT '{}'
 );
 
 -- Create transactions table
 CREATE TABLE transactions (
     id TEXT PRIMARY KEY,
-    external_payment_method_id INTEGER,
-    is_internal BOOLEAN NOT NULL,
+    external_payment_method_id TEXT REFERENCES payment_methods(id),
+    is_internal BOOLEAN,
     amount BIGINT NOT NULL,
-    state text NOT NULL,
+    status text NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by TEXT NOT NULL DEFAULT 'system',
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_by TEXT NOT NULL DEFAULT 'system',
     history JSONB[] DEFAULT '{}'
 );
 
 CREATE TABLE ledger_entries (
     id TEXT PRIMARY KEY ,
     transaction_id TEXT NOT NULL REFERENCES transactions(id),
-    custom_id TEXT NOT NULL,
     account_id TEXT NOT NULL REFERENCES accounts(id),
     direction text NOT NULL,
     amount BIGINT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by TEXT NOT NULL DEFAULT 'system'
 );
 
 

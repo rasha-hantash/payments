@@ -10,8 +10,9 @@ import (
 )
 
 type TransactionRepository struct {
-	db *sql.DB
-	ID identifier.ID
+	db       *sql.DB
+	txnID    identifier.ID
+	ledgerID identifier.ID
 }
 
 type Transaction struct {
@@ -27,25 +28,28 @@ type TransactionFilter struct {
 	Limit     int
 }
 
-func NewTransactionRepository(db *sql.DB, prefix string) *TransactionRepository {
-	return &TransactionRepository{db: db, ID: identifier.ID(prefix)}
+func NewTransactionRepository(db *sql.DB, txnPrefix, ledgerPrefix string) *TransactionRepository {
+	return &TransactionRepository{db: db, txnID: identifier.ID(txnPrefix), ledgerID: identifier.ID(ledgerPrefix)}
 }
 
 func (t *TransactionRepository) ListTransactions(ctx context.Context, filter TransactionFilter) ([]*Transaction, string, error) {
-	query := "SELECT id, account_id, amount, direction FROM transactions WHERE 1=1"
+	query := "SELECT id, account_id, amount, direction FROM ledger_entries WHERE 1=1"
 	args := []interface{}{}
+	argCount := 1
 
 	if filter.AccountID != "" {
-		query += " AND account_id = ?"
+		query += fmt.Sprintf(" AND account_id = $%d", argCount)
 		args = append(args, filter.AccountID)
+		argCount++
 	}
 
 	if filter.Cursor != "" {
-		query += " AND id > ?"
+		query += fmt.Sprintf(" AND id > $%d", argCount)
 		args = append(args, filter.Cursor)
+		argCount++
 	}
 
-	query += " ORDER BY id ASC LIMIT ?"
+	query += fmt.Sprintf(" ORDER BY id ASC LIMIT $%d", argCount)
 	args = append(args, filter.Limit+1) // Fetch one extra to determine if there are more results
 
 	rows, err := t.db.QueryContext(ctx, query, args...)
@@ -87,7 +91,7 @@ func (t *TransactionRepository) ListTransactions(ctx context.Context, filter Tra
 
 // TODO: Add Comment
 func (t *TransactionRepository) DepositFunds(ctx context.Context, amount float64, userId, debitAccountId, creditAccountId string) (string, error) {
-	return t.addDoubleEntryTransaction(ctx, amount, debitAccountId, creditAccountId, userId)
+	return t.addDoubleEntryTransactionFromExternal(ctx, amount, debitAccountId, creditAccountId, userId)
 }
 
 // TODO: Add Comment
@@ -98,6 +102,43 @@ func (t *TransactionRepository) WithdrawFunds(ctx context.Context, amount float6
 // TODO: Add Comment
 func (t *TransactionRepository) TransferFunds(ctx context.Context, amount float64, userId, debitAccountId, creditAccountId string) (string, error) {
 	return t.addDoubleEntryTransaction(ctx, amount, debitAccountId, creditAccountId, userId)
+}
+
+func (t *TransactionRepository) addDoubleEntryTransactionFromExternal(ctx context.Context, amount float64, debitedAccountId, creditedAccountId, userId string) (string, error) {
+	tx, err := t.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+
+	// note in this mvp, we are not checking to see if a user has enough funds in their external account to deposit funds
+	// in the next iteration i would rely on the third party api to determine that
+
+	txnId := t.txnID.New()
+	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (id, amount, status, created_by) VALUES ($1, $2, $3, $4)",
+		txnId, amount*100, "success", userId)
+	if err != nil {
+		slog.ErrorContext(ctx, "error while creating transaction", "error", err)
+		return "", err
+	}
+
+	ledgerId1 := t.ledgerID.New()
+	_, err = tx.ExecContext(ctx, "INSERT INTO ledger_entries (id, transaction_id, account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5, $6)",
+		ledgerId1, txnId, debitedAccountId, amount*100, "debit", userId)
+	if err != nil {
+		slog.ErrorContext(ctx, "error while creating credit ledger entry", "error", err)
+		return "", err
+	}
+
+	ledgerId2 := t.ledgerID.New()
+	_, err = tx.ExecContext(ctx, "INSERT INTO ledger_entries (id,  transaction_id, account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5, $6)",
+		ledgerId2, txnId, creditedAccountId, amount*100, "credit", userId)
+	if err != nil {
+		slog.ErrorContext(ctx, "error while creating credit ledger entry", "error", err)
+		return "", err
+	}
+
+	return "success", nil
 }
 
 func (t *TransactionRepository) addDoubleEntryTransaction(ctx context.Context, amount float64, debitedAccountId, creditedAccountId, userId string) (string, error) {
@@ -118,17 +159,27 @@ func (t *TransactionRepository) addDoubleEntryTransaction(ctx context.Context, a
 		return "", fmt.Errorf("insufficient balance in account %s", debitedAccountId)
 	}
 
-	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5)",
-		debitedAccountId, amount*100, "debit", userId)
+	txnId := t.txnID.New()
+	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (id, amount, status, created_by) VALUES ($1, $2, $3, $4)",
+		txnId, amount*100, "success", userId)
 	if err != nil {
-		slog.ErrorContext(ctx, "error while creating credit transaction", "error", err)
+		slog.ErrorContext(ctx, "error while creating transaction", "error", err)
 		return "", err
 	}
 
-	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5)",
-		creditedAccountId, amount*100, "credit", userId)
+	ledgerId1 := t.ledgerID.New()
+	_, err = tx.ExecContext(ctx, "INSERT INTO ledger_entries (id, transaction_id, account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5, $6)",
+		ledgerId1, txnId, debitedAccountId, amount*100, "debit", userId)
 	if err != nil {
-		slog.ErrorContext(ctx, "error while creating credit transaction", "error", err)
+		slog.ErrorContext(ctx, "error while creating credit ledger entry", "error", err)
+		return "", err
+	}
+
+	ledgerId2 := t.ledgerID.New()
+	_, err = tx.ExecContext(ctx, "INSERT INTO ledger_entries (id,  transaction_id, account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5, $6)",
+		ledgerId2, txnId, creditedAccountId, amount*100, "credit", userId)
+	if err != nil {
+		slog.ErrorContext(ctx, "error while creating credit ledger entry", "error", err)
 		return "", err
 	}
 
@@ -139,11 +190,11 @@ func (t *TransactionRepository) checkSufficientBalance(ctx context.Context, tx *
 	var balance float64
 	err := tx.QueryRowContext(ctx, `
         SELECT 
-			SUM(CASE WHEN direction = 'credit' THEN amount ELSE -amount END) AS balance
-		FROM
-			ledger_entries
-		WHERE
-			account_id = '%s'
+            COALESCE(SUM(CASE WHEN direction = 'credit' THEN amount ELSE -amount END), 0) AS balance
+        FROM
+            ledger_entries
+        WHERE
+            account_id = $1
     `, accountId).Scan(&balance)
 	if err != nil {
 		return false, err

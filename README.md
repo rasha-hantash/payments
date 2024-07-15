@@ -15,18 +15,17 @@ Run docker compose down
 
 
 # TODO for today
-- complete readme
-    - write out picture of architecture, justification for logging, 
-- make sure context is passed from gateway to 
+- (yes)make sure context is passed from gateway to 
 - (yes) add appropriate history trigger and custom_id trigger 
 - (yes) add logging 
 - make sure tests pass and write go tests 
 - add in bench mark tests
+- complete readme: write out picture of architecture, justification for logging, 
+- look at to do
 - extra: add middleware to gateway to check for authentication
--  extra: add rate limiter
+- extra: add rate limiter
 - extra: add health monitor 
-- extra: add a pr branch for how to do an ach transaction with a 3p like moov 
-- run go fmt 
+- extra: add a pr branch for how to do an ach transaction with a 3p like moov  
 - https://dev.to/stripe/designing-apis-for-humans-object-ids-3o5a
 - https://medium.com/@RobertKhou/double-entry-accounting-in-a-relational-database-2b7838a5d7f8 
 - https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html
