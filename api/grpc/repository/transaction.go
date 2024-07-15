@@ -20,7 +20,7 @@ type Transaction struct {
 	Id        string
 	AccountId string
 	Amount    int64
-	Status   string
+	Status    string
 	CreatedAt string
 	// Direction string
 }
@@ -37,13 +37,11 @@ func NewTransactionRepository(db *sql.DB, txnPrefix, ledgerPrefix string) *Trans
 
 func (t *TransactionRepository) ListTransactions(ctx context.Context, filter *TransactionFilter) ([]Transaction, string, error) {
 	query := `
-		SELECT DISTINCT t.id, t.amount, t.status, t.created_at,
-			(SELECT le.account_id FROM ledger_entries le WHERE le.transaction_id = t.id AND le.direction = 'debit' LIMIT 1) as from_account,
-			(SELECT le.account_id FROM ledger_entries le WHERE le.transaction_id = t.id AND le.direction = 'credit' LIMIT 1) as to_account
-		FROM transactions t
-		JOIN ledger_entries le ON t.id = le.transaction_id
-		WHERE 1=1
-	`
+	SELECT DISTINCT t.id, le.account_id, t.amount, t.status, t.created_at
+	FROM transactions t
+	JOIN ledger_entries le ON t.id = le.transaction_id
+	WHERE 1=1
+`
 
 	var args []interface{}
 	var conditions []string
@@ -80,10 +78,11 @@ func (t *TransactionRepository) ListTransactions(ctx context.Context, filter *Tr
 
 	for rows.Next() {
 		var txn Transaction
-		err := rows.Scan(&txn.Id, &txn.Amount, &txn.Status, &txn.CreatedAt)
+		err := rows.Scan(&txn.Id, &txn.AccountId, &txn.Amount, &txn.Status, &txn.CreatedAt)
 		if err != nil {
 			return nil, "", fmt.Errorf("error scanning transaction: %v", err)
 		}
+		txn.AccountId = *filter.AccountID
 		transactions = append(transactions, txn)
 		lastID = txn.Id
 	}
@@ -150,7 +149,7 @@ func (t *TransactionRepository) addDoubleEntryTransactionFromExternal(ctx contex
 		return "", err
 	}
 
-	return "success", nil
+	return string(txnId), nil
 }
 
 // addDoubleEntryTransaction adds a transaction with a double ledger entry
@@ -196,13 +195,13 @@ func (t *TransactionRepository) addDoubleEntryTransaction(ctx context.Context, a
 		return "", err
 	}
 
-	return "success", nil
+	return string(txnId), nil
 }
 
 // checkSufficientBalance checks if the account has sufficient balance to withdraw the amount
 func (t *TransactionRepository) checkSufficientBalance(ctx context.Context, tx *sql.Tx, accountId string, amount float64) (bool, error) {
-    var balance float64
-    err := tx.QueryRowContext(ctx, `
+	var balance float64
+	err := tx.QueryRowContext(ctx, `
         SELECT 
             COALESCE(SUM(CASE WHEN direction = 'credit' THEN amount ELSE -amount END), 0) AS balance
         FROM
@@ -210,8 +209,8 @@ func (t *TransactionRepository) checkSufficientBalance(ctx context.Context, tx *
         WHERE
             account_id = $1
     `, accountId).Scan(&balance)
-    if err != nil {
-        return false, err
-    }
-    return balance >= amount, nil
+	if err != nil {
+		return false, err
+	}
+	return balance >= amount, nil
 }

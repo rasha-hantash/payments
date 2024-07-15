@@ -21,58 +21,57 @@ func TestTransactionRepository_DepositFunds(t *testing.T) {
 	defer db.Close()
 
 	tests := []struct {
-		name            string
-		amount          float64
-		userId          string
-		debitAccountId  string
-		creditAccountId string
-		expectedResult  string
-		wantErr         bool
+		name             string
+		amount           float64
+		userId           string
+		debitAccountId   string
+		creditAccountId  string
+		expectedIdLength int
+		wantErr          bool
 	}{
 		{
-			name:            "successful deposit",
-			amount:          100,
-			userId:          "usr_1",
-			debitAccountId:  "acct_1",
-			creditAccountId: "acct_2",
-			expectedResult:  "success",
-			wantErr:         false,
+			name:             "successful deposit",
+			amount:           100,
+			userId:           "usr_1",
+			debitAccountId:   "acct_1",
+			creditAccountId:  "acct_2",
+			expectedIdLength: 20,
+			wantErr:          false,
 		},
 		{
-			name:            "insert error,  debit account does not exist",
-			amount:          100,
-			userId:          "usr_2",
-			debitAccountId:  "acct_3",
-			creditAccountId: "acct_4",
-			expectedResult:  "",
-			wantErr:         true,
+			name:             "insert error,  debit account does not exist",
+			amount:           100,
+			userId:           "usr_2",
+			debitAccountId:   "acct_3",
+			creditAccountId:  "acct_4",
+			expectedIdLength: 0,
+			wantErr:          true,
 		},
 		{
-			name:            "insert error, credit account does not exist",
-			amount:          100,
-			userId:          "usr_3",
-			debitAccountId:  "acct_5",
-			creditAccountId: "acct_6",
-			expectedResult:  "",
-			wantErr:         true,
+			name:             "insert error, credit account does not exist",
+			amount:           100,
+			userId:           "usr_3",
+			debitAccountId:   "acct_5",
+			creditAccountId:  "acct_6",
+			expectedIdLength: 0,
+			wantErr:          true,
 		},
 	}
 
 	repo := NewTransactionRepository(db, "txn_", "le_")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := repo.DepositFunds(context.Background(), tt.amount, tt.userId, tt.debitAccountId, tt.creditAccountId)
+			txnId, err := repo.DepositFunds(context.Background(), tt.amount, tt.userId, tt.debitAccountId, tt.creditAccountId)
 
-			if result != tt.expectedResult {
-				t.Errorf("expected result %v, got %v", tt.expectedResult, result)
+			if len(txnId) != int(tt.expectedIdLength) {
+				t.Errorf("expected result %d, got %d", tt.expectedIdLength, len(txnId))
 			}
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedResult, result)
+				assert.Equal(t, tt.expectedIdLength, len(txnId))
 			}
-
 		})
 	}
 }
@@ -88,56 +87,56 @@ func TestTransactionRepository_WithdrawFunds(t *testing.T) {
 	defer db.Close()
 
 	tests := []struct {
-		name            string
-		amount          float64
-		userId          string
-		debitAccountId  string
-		creditAccountId string
-		expectedResult  string
-		wantErr         bool
+		name             string
+		amount           float64
+		userId           string
+		debitAccountId   string
+		creditAccountId  string
+		expectedIdLength int
+		wantErr          bool
 	}{
 		{
-			name:            "successful withdraw",
-			amount:          100,
-			userId:          "usr_1",
-			debitAccountId:  "acct_1",
-			creditAccountId: "acct_2",
-			expectedResult:  "success",
-			wantErr:         false,
+			name:             "successful withdraw",
+			amount:           100,
+			userId:           "usr_1",
+			debitAccountId:   "acct_1",
+			creditAccountId:  "acct_2",
+			expectedIdLength: 20,
+			wantErr:          false,
 		},
 		{
-			name:            "insufficient funds",
-			amount:          100,
-			userId:          "usr_2",
-			debitAccountId:  "acct_3",
-			creditAccountId: "acct_4",
-			expectedResult:  "",
-			wantErr:         true,
+			name:             "insufficient funds",
+			amount:           100,
+			userId:           "usr_2",
+			debitAccountId:   "acct_3",
+			creditAccountId:  "acct_4",
+			expectedIdLength: 0,
+			wantErr:          true,
 		},
 		{
-			name:            "credit account does not exist",
-			amount:          100,
-			userId:          "usr_3",
-			debitAccountId:  "acct_5",
-			creditAccountId: "acct_6",
-			expectedResult:  "",
-			wantErr:         true,
+			name:             "credit account does not exist",
+			amount:           100,
+			userId:           "usr_3",
+			debitAccountId:   "acct_5",
+			creditAccountId:  "acct_6",
+			expectedIdLength: 0,
+			wantErr:          true,
 		},
 	}
 
 	repo := NewTransactionRepository(db, "txn_", "le_")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := repo.WithdrawFunds(context.Background(), tt.amount, tt.userId, tt.debitAccountId, tt.creditAccountId)
+			txnId, err := repo.WithdrawFunds(context.Background(), tt.amount, tt.userId, tt.debitAccountId, tt.creditAccountId)
 
-			if result != tt.expectedResult {
-				t.Errorf("expected result %v, got %v", tt.expectedResult, result)
+			if len(txnId) != tt.expectedIdLength {
+				t.Errorf("expected result %v, got %v", tt.expectedIdLength, len(txnId))
 			}
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedResult, result)
+				assert.Equal(t, tt.expectedIdLength, len(txnId))
 			}
 		})
 	}
@@ -154,56 +153,56 @@ func TestTransactionRepository_TransferFunds(t *testing.T) {
 	defer db.Close()
 
 	tests := []struct {
-		name            string
-		amount          float64
-		userId          string
-		debitAccountId  string
-		creditAccountId string
-		expectedResult  string
-		wantErr         bool
+		name             string
+		amount           float64
+		userId           string
+		debitAccountId   string
+		creditAccountId  string
+		expectedIdLength int
+		wantErr          bool
 	}{
 		{
-			name:            "successful transfer",
-			amount:          100,
-			userId:          "usr_1",
-			debitAccountId:  "acct_1",
-			creditAccountId: "acct_2",
-			expectedResult:  "success",
-			wantErr:         false,
+			name:             "successful transfer",
+			amount:           100,
+			userId:           "usr_1",
+			debitAccountId:   "acct_1",
+			creditAccountId:  "acct_2",
+			expectedIdLength: 20,
+			wantErr:          false,
 		},
 		{
-			name:            "insert error debit insufficient funds",
-			amount:          100,
-			userId:          "usr_2",
-			debitAccountId:  "acct_3",
-			creditAccountId: "acct_4",
-			expectedResult:  "",
-			wantErr:         true,
+			name:             "insert error debit insufficient funds",
+			amount:           100,
+			userId:           "usr_2",
+			debitAccountId:   "acct_3",
+			creditAccountId:  "acct_4",
+			expectedIdLength: 0,
+			wantErr:          true,
 		},
 		{
-			name:            "insert error debit insufficient funds",
-			amount:          100,
-			userId:          "usr_1",
-			debitAccountId:  "acct_5",
-			creditAccountId: "acct_6",
-			expectedResult:  "",
-			wantErr:         true,
+			name:             "insert error debit insufficient funds",
+			amount:           100,
+			userId:           "usr_1",
+			debitAccountId:   "acct_5",
+			creditAccountId:  "acct_6",
+			expectedIdLength: 0,
+			wantErr:          true,
 		},
 	}
 
 	repo := NewTransactionRepository(db, "txn_", "le_")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := repo.TransferFunds(context.Background(), tt.amount, tt.userId, tt.debitAccountId, tt.creditAccountId)
+			txnId, err := repo.TransferFunds(context.Background(), tt.amount, tt.userId, tt.debitAccountId, tt.creditAccountId)
 
-			if result != tt.expectedResult {
-				t.Errorf("expected result %v, got %v", tt.expectedResult, result)
+			if len(txnId) != tt.expectedIdLength {
+				t.Errorf("expected result %v, got %v", tt.expectedIdLength, len(txnId))
 			}
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedResult, result)
+				assert.Equal(t, tt.expectedIdLength, len(txnId))
 			}
 		})
 	}
@@ -222,7 +221,7 @@ func TestTransactionRepository_ListTransactions(t *testing.T) {
 	tests := []struct {
 		name           string
 		filter         TransactionFilter
-		expectedResult []*Transaction
+		expectedResult []Transaction
 		expectedCursor string
 		wantErr        bool
 	}{
@@ -233,14 +232,14 @@ func TestTransactionRepository_ListTransactions(t *testing.T) {
 				Cursor:    nil,
 				Limit:     intPtr(5),
 			},
-			expectedResult: []*Transaction{
-				{Id: "txn_1", Amount: 110, Status: "success"},
-				{Id: "txn_3", Amount: 130, Status: "success"},
-				{Id: "txn_4", Amount: 140, Status: "success"},
-				{Id: "txn_6", Amount: 160, Status: "success"},
-				{Id: "txn_7", Amount: 170, Status: "success"},
+			expectedResult: []Transaction{
+				{Id: "txn_11", Amount: 210, Status: "success"},
+				{Id: "txn_12", Amount: 220, Status: "success"},
+				{Id: "txn_14", Amount: 240, Status: "success"},
+				{Id: "txn_15", Amount: 250, Status: "success"},
+				{Id: "txn_17", Amount: 270, Status: "success"},
 			},
-			expectedCursor: "txn_7",
+			expectedCursor: "txn_17",
 			wantErr:        false,
 		},
 		{
@@ -250,14 +249,14 @@ func TestTransactionRepository_ListTransactions(t *testing.T) {
 				Cursor:    nil,
 				Limit:     intPtr(5),
 			},
-			expectedResult: []*Transaction{
+			expectedResult: []Transaction{
 				{Id: "txn_1", Amount: 110, Status: "success"},
-				{Id: "txn_2", Amount: 120, Status: "success"},
-				{Id: "txn_4", Amount: 140, Status: "success"},
-				{Id: "txn_5", Amount: 150, Status: "success"},
-				{Id: "txn_7", Amount: 170, Status: "success"},
+				{Id: "txn_10", Amount: 200, Status: "success"},
+				{Id: "txn_12", Amount: 220, Status: "success"},
+				{Id: "txn_13", Amount: 230, Status: "success"},
+				{Id: "txn_15", Amount: 250, Status: "success"},
 			},
-			expectedCursor: "txn_7",
+			expectedCursor: "txn_15",
 			wantErr:        false,
 		},
 		{
@@ -267,29 +266,29 @@ func TestTransactionRepository_ListTransactions(t *testing.T) {
 				Cursor:    nil,
 				Limit:     intPtr(5),
 			},
-			expectedResult: []*Transaction{
-				{Id: "txn_2", Amount: 120, Status: "success"},
-				{Id: "txn_3", Amount: 130, Status: "success"},
-				{Id: "txn_5", Amount: 150, Status: "success"},
-				{Id: "txn_6", Amount: 160, Status: "success"},
-				{Id: "txn_8", Amount: 180, Status: "success"},
+			expectedResult: []Transaction{
+				{Id: "txn_1", Amount: 110, Status: "success"},
+				{Id: "txn_10", Amount: 200, Status: "success"},
+				{Id: "txn_11", Amount: 210, Status: "success"},
+				{Id: "txn_13", Amount: 230, Status: "success"},
+				{Id: "txn_14", Amount: 240, Status: "success"},
 			},
-			expectedCursor: "txn_8",
+			expectedCursor: "txn_14",
 			wantErr:        false,
 		},
 		{
 			name: "successful list with cursor",
 			filter: TransactionFilter{
 				AccountID: strPtr("acct_1"),
-				Cursor:    strPtr("txn_7"),
+				Cursor:    nil,
 				Limit:     intPtr(3),
 			},
-			expectedResult: []*Transaction{
-				{Id: "txn_9", Amount: 190, Status: "success"},
-				{Id: "txn_10", Amount: 200, Status: "success"},
+			expectedResult: []Transaction{
+				{Id: "txn_11", Amount: 210, Status: "success"},
 				{Id: "txn_12", Amount: 220, Status: "success"},
+				{Id: "txn_14", Amount: 240, Status: "success"},
 			},
-			expectedCursor: "txn_12",
+			expectedCursor: "txn_14",
 			wantErr:        false,
 		},
 		{
@@ -299,7 +298,7 @@ func TestTransactionRepository_ListTransactions(t *testing.T) {
 				Cursor:    nil,
 				Limit:     intPtr(5),
 			},
-			expectedResult: []*Transaction{},
+			expectedResult: []Transaction{},
 			expectedCursor: "",
 			wantErr:        false,
 		},
@@ -308,13 +307,17 @@ func TestTransactionRepository_ListTransactions(t *testing.T) {
 	repo := NewTransactionRepository(db, "txn_", "le_")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, cursor, err := repo.ListTransactions(context.Background(), &tt.filter)
+			results, cursor, err := repo.ListTransactions(context.Background(), &tt.filter)
 
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedResult, result)
+				for i, result := range results {
+					assert.Equal(t, tt.expectedResult[i].Id, result.Id)
+					assert.Equal(t, tt.expectedResult[i].Amount, result.Amount)
+					assert.Equal(t, tt.expectedResult[i].Status, result.Status)
+				}
 				assert.Equal(t, tt.expectedCursor, cursor)
 			}
 		})

@@ -14,7 +14,6 @@ type Identifier[T any] interface {
 	Validate(T) (bool, error)
 }
 
-
 type ID string
 
 const (

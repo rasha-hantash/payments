@@ -321,7 +321,11 @@ For more information on AWS CloudWatch log filtering, refer to the following res
 - return also the internal and external account of user
 - complete readme: draw out image of architecture
 - benchmark testing for the identifier library
+- add comment on the necessity for double-entry accounting
 - improve what the api returns back to the user
+- add an example walkthru of how to debug logging in cloudwatch
+- improve cursor to be the next row now last row
+- create script to see data with 50 transactions (100 ledger entries)
 - replace cursor value to a token
 - extra: add middleware to gateway to check for authentication
 - extra: add rate limiter
