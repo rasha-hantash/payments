@@ -149,7 +149,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"debit_account_id": "acct_
 curl -X POST -H "Content-Type: application/json" -d '{"debit_account_id": "acct_[your-account-id]", "credit_account_id": "acct_[your-account-id]", "amount": 250}' "$BASE_URL/transfer_funds"
 
 # List transactions
-curl -X GET "$BASE_URL/list_transactions?account_id=account_123&limit=10"
+curl -X GET "$BASE_URL/list_transactions?account_id=acct_[your-account-id]&limit=10"
 
 # Get account balance
 curl -X GET "$BASE_URL/get_account_balance?account_id=acct_[your-acct-id]"
@@ -322,6 +322,7 @@ For more information on AWS CloudWatch log filtering, refer to the following res
 - complete readme: draw out image of architecture
 - benchmark testing for the identifier library
 - improve what the api returns back to the user
+- replace cursor value to a token
 - extra: add middleware to gateway to check for authentication
 - extra: add rate limiter
 - extra: add health monitor 

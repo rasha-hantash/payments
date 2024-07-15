@@ -63,10 +63,10 @@ func TestCreateUser(t *testing.T) {
 			accountRepo := NewAccountRepository(db, "acct_")
 			userRepo := NewUserRepository(db, accountRepo, "usr_")
 
-			id, err := userRepo.CreateUser(context.Background(), tt.input)
+			res, err := userRepo.CreateUser(context.Background(), tt.input)
 
-			if id != tt.expectedID {
-				t.Errorf("expected id %v, got %v", tt.expectedID, id)
+			if res.Id != tt.expectedID {
+				t.Errorf("expected id %v, got %v", tt.expectedID, res.Id)
 			}
 			if err != tt.expectedErr {
 				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
