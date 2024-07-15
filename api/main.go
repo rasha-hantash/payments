@@ -3,19 +3,19 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	_ "github.com/lib/pq"
 	"github.com/rasha-hantash/chariot-takehome/api/pkgs/logger"
 	"google.golang.org/grpc"
 	"log"
 	"log/slog"
 	"net"
 	"os"
-	_ "github.com/lib/pq"
 
 	"github.com/caarlos0/env/v6"
 
+	service "github.com/rasha-hantash/chariot-takehome/api/grpc"
 	pb "github.com/rasha-hantash/chariot-takehome/api/grpc/proto"
 	"github.com/rasha-hantash/chariot-takehome/api/grpc/repository"
-	service "github.com/rasha-hantash/chariot-takehome/api/grpc"
 )
 
 type DatabaseConfig struct {
@@ -69,7 +69,7 @@ func main() {
 		os.Exit(1)
 	}
 	slog.Info("starting grpc", "port", c.ServerPort)
-	
+
 	listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", c.ServerPort))
 	if err != nil {
 		slog.Error("failed to start listener for grpc", "error", err)
@@ -86,7 +86,7 @@ func main() {
 	t := repository.NewTransactionRepository(db.Conn, "txn_")
 	a := repository.NewAccountRepository(db.Conn, "acct_")
 	u := repository.NewUserRepository(db.Conn, a, "usr_")
-	
+
 	pb.RegisterApiServiceServer(s, &service.GrpcService{UserRepo: u, AccountRepo: a, TransactionRepo: t})
 	if err := s.Serve(listener); err != nil {
 		slog.Error("failed to serve", "error", err)

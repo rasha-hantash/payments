@@ -41,16 +41,16 @@ func main() {
 
 	// Initialize and start the gateway
 	router := mux.NewRouter()
-	
+
 	// Add your routes here, for example:
 	router.HandleFunc("/create_user", h.CreateUserHandler(grpcClient)).Methods("POST")
-    router.HandleFunc("/create_account", h.CreateAccountHandler(grpcClient)).Methods("POST")
-    router.HandleFunc("/deposit_funds", h.DepositFundsHandler(grpcClient)).Methods("POST")
-    router.HandleFunc("/withdraw_funds", h.WithdrawFundsHandler(grpcClient)).Methods("POST")
-    router.HandleFunc("/transfer_funds", h.TransferFundsHandler(grpcClient)).Methods("POST")
-    router.HandleFunc("/list_transactions", h.ListTransactionsHandler(grpcClient)).Methods("GET")
-    router.HandleFunc("/get_account_balance", h.GetAccountBalanceHandler(grpcClient)).Methods("GET")
+	router.HandleFunc("/create_account", h.CreateAccountHandler(grpcClient)).Methods("POST")
+	router.HandleFunc("/deposit_funds", h.DepositFundsHandler(grpcClient)).Methods("POST")
+	router.HandleFunc("/withdraw_funds", h.WithdrawFundsHandler(grpcClient)).Methods("POST")
+	router.HandleFunc("/transfer_funds", h.TransferFundsHandler(grpcClient)).Methods("POST")
+	router.HandleFunc("/list_transactions", h.ListTransactionsHandler(grpcClient)).Methods("GET")
+	router.HandleFunc("/get_account_balance", h.GetAccountBalanceHandler(grpcClient)).Methods("GET")
 
-    log.Println("Gateway server listening on :8080")
-    log.Fatal(http.ListenAndServe(":8080", router))
+	log.Println("Gateway server listening on :8080")
+	log.Fatal(http.ListenAndServe(":8080", router))
 }

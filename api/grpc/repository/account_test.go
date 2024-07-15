@@ -3,19 +3,19 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
 
 func TestCreateAccount(t *testing.T) {
 	tests := []struct {
-		name         string
-		input        *Account
-		mockSetup    func(mock sqlmock.Sqlmock)
-		expectedID   string
-		expectedErr  error
+		name        string
+		input       *Account
+		mockSetup   func(mock sqlmock.Sqlmock)
+		expectedID  string
+		expectedErr error
 	}{
 		{
 			name: "successful insert",
@@ -78,11 +78,11 @@ func TestCreateAccount(t *testing.T) {
 
 func TestGetAccountBalance(t *testing.T) {
 	tests := []struct {
-		name         string
-		accountId    string
-		mockQuery    func(mock sqlmock.Sqlmock, accountId string)
-		expectedBal  int64
-		expectedErr  bool
+		name        string
+		accountId   string
+		mockQuery   func(mock sqlmock.Sqlmock, accountId string)
+		expectedBal int64
+		expectedErr bool
 	}{
 		{
 			name:      "Valid balance",
@@ -142,4 +142,3 @@ func TestGetAccountBalance(t *testing.T) {
 		})
 	}
 }
-

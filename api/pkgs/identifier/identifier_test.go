@@ -1,8 +1,8 @@
 package identifier
 
 import (
-	"time"
 	"testing"
+	"time"
 )
 
 func TestNew(t *testing.T) {
@@ -59,8 +59,6 @@ func hasPrefix(s, prefix string) bool {
 	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
 }
 
-
-
 func TestFromString(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -85,9 +83,9 @@ func TestFromString(t *testing.T) {
 
 func TestFromBytes(t *testing.T) {
 	tests := []struct {
-		name  string
-		input []byte
-		want  ID
+		name    string
+		input   []byte
+		want    ID
 		wantErr bool
 	}{
 		{"Valid bytes", []byte("acct_240714212559C7E"), "acct_240714212559C7E", false},

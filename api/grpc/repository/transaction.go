@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"log/slog"
 	"fmt"
+	"log/slog"
 
 	"github.com/rasha-hantash/chariot-takehome/api/pkgs/identifier"
 )
@@ -26,8 +26,6 @@ type TransactionFilter struct {
 	Cursor    string
 	Limit     int
 }
-
-
 
 func NewTransactionRepository(db *sql.DB, prefix string) *TransactionRepository {
 	return &TransactionRepository{db: db, ID: identifier.ID(prefix)}
@@ -103,32 +101,32 @@ func (t *TransactionRepository) TransferFunds(ctx context.Context, amount float6
 }
 
 func (t *TransactionRepository) addDoubleEntryTransaction(ctx context.Context, amount float64, debitedAccountId, creditedAccountId, userId string) (string, error) {
-	tx, err := t.db.BeginTx(ctx,  &sql.TxOptions{Isolation: sql.LevelSerializable})
+	tx, err := t.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return "", err
 	}
 	defer tx.Rollback()
 
 	// Check if the debited account has sufficient balance
-    sufficient, err := t.checkSufficientBalance(ctx, tx, debitedAccountId, amount)
-    if err != nil {
+	sufficient, err := t.checkSufficientBalance(ctx, tx, debitedAccountId, amount)
+	if err != nil {
 		slog.Error("error checking balance", "error", err.Error())
-        return "", fmt.Errorf("error checking balance: %w", err)
-    }
-    if !sufficient {
+		return "", fmt.Errorf("error checking balance: %w", err)
+	}
+	if !sufficient {
 		slog.Error("insufficient balance", "account_id", debitedAccountId)
-        return "", fmt.Errorf("insufficient balance in account %s", debitedAccountId)
-    }
-	
+		return "", fmt.Errorf("insufficient balance in account %s", debitedAccountId)
+	}
+
 	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5)",
-	debitedAccountId, amount*100, "debit", userId)
+		debitedAccountId, amount*100, "debit", userId)
 	if err != nil {
 		slog.ErrorContext(ctx, "error while creating credit transaction", "error", err)
 		return "", err
 	}
 
 	_, err = tx.ExecContext(ctx, "INSERT INTO transactions (account_id, amount, direction, created_by) VALUES ($1, $2, $3, $4, $5)",
-	creditedAccountId, amount*100, "credit", userId)
+		creditedAccountId, amount*100, "credit", userId)
 	if err != nil {
 		slog.ErrorContext(ctx, "error while creating credit transaction", "error", err)
 		return "", err
@@ -138,8 +136,8 @@ func (t *TransactionRepository) addDoubleEntryTransaction(ctx context.Context, a
 }
 
 func (t *TransactionRepository) checkSufficientBalance(ctx context.Context, tx *sql.Tx, accountId string, amount float64) (bool, error) {
-    var balance float64
-    err := tx.QueryRowContext(ctx, `
+	var balance float64
+	err := tx.QueryRowContext(ctx, `
         SELECT 
 			SUM(CASE WHEN direction = 'credit' THEN amount ELSE -amount END) AS balance
 		FROM
@@ -147,11 +145,8 @@ func (t *TransactionRepository) checkSufficientBalance(ctx context.Context, tx *
 		WHERE
 			account_id = '%s'
     `, accountId).Scan(&balance)
-    if err != nil {
-        return false, err
-    }
-    return balance >= amount, nil
+	if err != nil {
+		return false, err
+	}
+	return balance >= amount, nil
 }
-
-
-

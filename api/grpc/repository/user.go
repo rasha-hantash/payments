@@ -12,15 +12,15 @@ import (
 type User struct {
 	Id                 string
 	Email              string
-	Name          string
+	Name               string
 	IntLedgerAccountId sql.NullString
 	ExtLedgerAccountId sql.NullString
 }
 
 type UserRepository struct {
-	db *sql.DB
-	accountRepo     *AccountRepository
-	ID identifier.ID
+	db          *sql.DB
+	accountRepo *AccountRepository
+	ID          identifier.ID
 }
 
 func NewUserRepository(db *sql.DB, accountRepo *AccountRepository, prefix string) *UserRepository {
@@ -52,8 +52,6 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *User) (string, er
 
 	user.IntLedgerAccountId = sql.NullString{String: intAccountId, Valid: true}
 	user.ExtLedgerAccountId = sql.NullString{String: extAccountId, Valid: true}
-
-
 
 	err = r.db.QueryRowContext(ctx, `
         INSERT INTO users (email, name, int_ledger_account_id, ext_ledger_account_id)
