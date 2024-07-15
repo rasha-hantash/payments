@@ -137,25 +137,25 @@ BASE_URL="http://localhost:8080"
 curl -X POST -H "Content-Type: application/json" -d '{"name": "John Doe", "email": "john@example.com"}' "$BASE_URL/create_user"
 
 # Create an account
-curl -X POST -H "Content-Type: application/json" -d '{"user_id": "user_123", "account_type": "checking"}' "$BASE_URL/create_account"
+curl -X POST -H "Content-Type: application/json" -d '{"user_id": "usr_[your-returned-id]", "account_type": "checking", "account_state":"open"}' "$BASE_URL/create_account"
 
 # Deposit funds
-curl -X POST -H "Content-Type: application/json" -d '{"account_id": "account_123", "amount": 1000}' "$BASE_URL/deposit_funds"
+curl -X POST -H "Content-Type: application/json" -d '{"debit_account_id": "acct_[your-account-id]", "credit_account_id": "acct_[your-account-id]", "amount": 1000}' "$BASE_URL/deposit_funds"
 
 # Withdraw funds
-curl -X POST -H "Content-Type: application/json" -d '{"account_id": "account_123", "amount": 500}' "$BASE_URL/withdraw_funds"
+curl -X POST -H "Content-Type: application/json" -d '{"debit_account_id": "acct_[your-account-id]", "credit_account_id": "acct_[your-account-id]", "amount": 500}' "$BASE_URL/withdraw_funds"
 
 # Transfer funds
-curl -X POST -H "Content-Type: application/json" -d '{"from_account_id": "account_123", "to_account_id": "account_456", "amount": 250}' "$BASE_URL/transfer_funds"
+curl -X POST -H "Content-Type: application/json" -d '{"debit_account_id": "acct_[your-account-id]", "credit_account_id": "acct_[your-account-id]", "amount": 250}' "$BASE_URL/transfer_funds"
 
 # List transactions
 curl -X GET "$BASE_URL/list_transactions?account_id=account_123&limit=10"
 
 # Get account balance
-curl -X GET "$BASE_URL/get_account_balance?account_id=account_123"
+curl -X GET "$BASE_URL/get_account_balance?account_id=acct_[your-acct-id]"
 ```
 
-Note: Replace `user_123`, `account_123`, and `account_456` with actual IDs from your system.
+Note: Replace `usr_[your-user-id]` and `acct_[your-account-id]` with actual IDs from your system.
 
 ## Idempotency Implementation
 
@@ -317,7 +317,11 @@ For more information on AWS CloudWatch log filtering, refer to the following res
 
 
 # TODO for later
-- complete readme: write out picture of architecture, justification for logging, 
+- update readme
+- return also the internal and external account of user
+- complete readme: draw out image of architecture
+- benchmark testing for the identifier library
+- improve what the api returns back to the user
 - extra: add middleware to gateway to check for authentication
 - extra: add rate limiter
 - extra: add health monitor 

@@ -20,11 +20,15 @@ func (g *GrpcService) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		Email: req.Email,
 	}
 
-	id, err := g.UserRepo.CreateUser(ctx, user)
+	res, err := g.UserRepo.CreateUser(ctx, user)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.User{Id: id}, nil
+	return &pb.User{
+		Id:    res.Id,
+		IntLedgerAccountId: res.IntLedgerAccountId.String,
+		ExtLedgerAccountId: res.ExtLedgerAccountId.String,
+	}, nil
 }
 
 func (g *GrpcService) CreateAccount(ctx context.Context, req *pb.CreateAccountRequest) (*pb.Account, error) {

@@ -27,7 +27,7 @@ func NewUserRepository(db *sql.DB, accountRepo *AccountRepository, prefix string
 	return &UserRepository{db: db, accountRepo: accountRepo, ID: identifier.ID(prefix)}
 }
 
-func (r *UserRepository) CreateUser(ctx context.Context, user *User) (string, error) {
+func (r *UserRepository) CreateUser(ctx context.Context, user *User) (*User, error) {
 	var userId string
 	// Create internal and external ledger accounts
 	intAccount := &Account{
@@ -42,26 +42,31 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *User) (string, er
 	intAccountId, err := r.accountRepo.CreateAccount(ctx, intAccount)
 	if err != nil {
 		slog.ErrorContext(ctx, "error while creating internal account", "error", err)
-		return "", err
+		return nil, err
 	}
 	extAccountId, err := r.accountRepo.CreateAccount(ctx, extAccount)
 	if err != nil {
 		slog.ErrorContext(ctx, "error while creating external account", "error", err)
-		return "", err
+		return nil, err
 	}
 
+	idUser := r.ID.New()
 	user.IntLedgerAccountId = sql.NullString{String: intAccountId, Valid: true}
 	user.ExtLedgerAccountId = sql.NullString{String: extAccountId, Valid: true}
 
 	err = r.db.QueryRowContext(ctx, `
-        INSERT INTO users (email, name, int_ledger_account_id, ext_ledger_account_id)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO users (id, email, name, int_ledger_account_id, ext_ledger_account_id)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING id
-    `, user.Email, user.Name, user.IntLedgerAccountId, user.ExtLedgerAccountId).Scan(&userId)
+    `, idUser, user.Email, user.Name, user.IntLedgerAccountId, user.ExtLedgerAccountId).Scan(&userId)
 	if err != nil {
 		slog.ErrorContext(ctx, "error while creating user", "error", err)
-		return "", err
+		return nil, err
 	}
 
-	return userId, err
+	return &User{
+		Id:                 userId,
+		IntLedgerAccountId: user.IntLedgerAccountId,
+		ExtLedgerAccountId: user.ExtLedgerAccountId,
+	}, err
 }

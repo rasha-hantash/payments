@@ -45,6 +45,8 @@ message User {
   string id = 1;
   string name = 2;
   string email = 3;
+  string int_ledger_account_id = 4;
+  string ext_ledger_account_id = 5;
 }
 
 message Account {

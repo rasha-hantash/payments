@@ -5,6 +5,8 @@ CREATE TABLE users (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     email citext UNIQUE NOT NULL,
+    int_ledger_account_id TEXT,
+    ext_ledger_account_id TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT NOT NULL DEFAULT 'system',
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
