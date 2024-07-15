@@ -103,7 +103,7 @@ func (t *TransactionRepository) TransferFunds(ctx context.Context, amount float6
 }
 
 func (t *TransactionRepository) addDoubleEntryTransaction(ctx context.Context, amount float64, debitedAccountId, creditedAccountId, userId string) (string, error) {
-	tx, err := t.db.BeginTx(ctx, nil)
+	tx, err := t.db.BeginTx(ctx,  &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return "", err
 	}
