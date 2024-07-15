@@ -7,15 +7,6 @@ import (
 	"time"
 )
 
-const (
-
-)
-
-var (
-	ErrInvalidFormat = errors.New("invalid identifier format")
-	ErrInvalidLength = errors.New("invalid identifier length")
-)
-
 type Identifier[T any] interface {
 	New() (T, error)
 	FromString(string) (T, error)
@@ -26,14 +17,11 @@ type Identifier[T any] interface {
 // todo turn this into a struct that stores the UUID, NEW() will convert to human readable string
 type ID string
 
-var charset = []byte("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
-
 const (
 	alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	digits   = "0123456789"
 	idLength = 20
 	timestampLength = 12
-	// randomLength    = 8
 )
 
 func (i ID) New() ID {

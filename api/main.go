@@ -13,19 +13,9 @@ import (
 
 	"github.com/caarlos0/env/v6"
 
-	//"github.com/GetClaimClam/claimclam-platform/lib/checkbook"
-	//"github.com/GetClaimClam/claimclam-platform/lib/ledger"
-	//"github.com/GetClaimClam/claimclam-platform/lib/logger"
-	//emailer "github.com/GetClaimClam/claimclam-platform/lib/sendgrid"
-	//"github.com/GetClaimClam/claimclam-platform/lib/storage/postgres"
-	//"github.com/GetClaimClam/claimclam-platform/pkgs/services/claims/pkg/claim"
 	pb "github.com/rasha-hantash/chariot-takehome/api/grpc/proto"
 	"github.com/rasha-hantash/chariot-takehome/api/grpc/repository"
 	service "github.com/rasha-hantash/chariot-takehome/api/grpc"
-	//"github.com/GetClaimClam/claimclam-platform/pkgs/services/claims/pkg/legalCase"
-	//"github.com/GetClaimClam/claimclam-platform/pkgs/services/claims/pkg/payment"
-	//"github.com/GetClaimClam/claimclam-platform/pkgs/services/claims/pkg/service"
-	//"github.com/GetClaimClam/claimclam-platform/pkgs/services/claims/pkg/user"
 )
 
 type DatabaseConfig struct {
@@ -63,7 +53,6 @@ func newDBClient(psqlConnStr string) *Client {
 }
 
 func main() {
-	// system setup
 	var c Config
 
 	opts := &slog.HandlerOptions{

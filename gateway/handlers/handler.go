@@ -14,10 +14,6 @@ var (
 	mu              sync.Mutex
 )
 
-// type IdempotencyKeyRequest struct {
-// 	IdempotencyKey string `json:"idempotency_key"`
-// }
-
 func CreateUserHandler(grpcClient *client.ApiClient) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         var req pb.CreateUserRequest
@@ -80,7 +76,7 @@ func DepositFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 		}
 
 		idempotencyKeys[req.IdempotencyKey] = true
-		
+
 		json.NewEncoder(w).Encode(transaction)
 	}
 }

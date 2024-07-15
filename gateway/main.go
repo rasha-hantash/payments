@@ -23,10 +23,6 @@ type GatewayHandler struct {
 	apiClient *client.ApiClient
 }
 
-
-
-
-
 func main() {
 	// Parse environment variables
 	cfg := Config{}
