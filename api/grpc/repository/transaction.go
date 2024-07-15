@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/rasha-hantash/chariot-takehome/api/pkgs/identifier"
 )
@@ -19,91 +20,102 @@ type Transaction struct {
 	Id        string
 	AccountId string
 	Amount    int64
-	Direction string
+	Status   string
+	CreatedAt string
+	// Direction string
 }
 
 type TransactionFilter struct {
-	AccountID string
-	Cursor    string
-	Limit     int
+	AccountID *string
+	Cursor    *string
+	Limit     *int
 }
 
 func NewTransactionRepository(db *sql.DB, txnPrefix, ledgerPrefix string) *TransactionRepository {
 	return &TransactionRepository{db: db, txnID: identifier.ID(txnPrefix), ledgerID: identifier.ID(ledgerPrefix)}
 }
 
-func (t *TransactionRepository) ListTransactions(ctx context.Context, filter TransactionFilter) ([]*Transaction, string, error) {
-	query := "SELECT id, account_id, amount, direction FROM ledger_entries WHERE 1=1"
-	args := []interface{}{}
-	argCount := 1
+func (t *TransactionRepository) ListTransactions(ctx context.Context, filter *TransactionFilter) ([]Transaction, string, error) {
+	query := `
+		SELECT DISTINCT t.id, t.amount, t.status, t.created_at,
+			(SELECT le.account_id FROM ledger_entries le WHERE le.transaction_id = t.id AND le.direction = 'debit' LIMIT 1) as from_account,
+			(SELECT le.account_id FROM ledger_entries le WHERE le.transaction_id = t.id AND le.direction = 'credit' LIMIT 1) as to_account
+		FROM transactions t
+		JOIN ledger_entries le ON t.id = le.transaction_id
+		WHERE 1=1
+	`
 
-	if filter.AccountID != "" {
-		query += fmt.Sprintf(" AND account_id = $%d", argCount)
-		args = append(args, filter.AccountID)
-		argCount++
+	var args []interface{}
+	var conditions []string
+
+	if filter.AccountID != nil && *filter.AccountID != "" {
+		conditions = append(conditions, "le.account_id = $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filter.AccountID)
 	}
 
-	if filter.Cursor != "" {
-		query += fmt.Sprintf(" AND id > $%d", argCount)
-		args = append(args, filter.Cursor)
-		argCount++
+	if filter.Cursor != nil && *filter.Cursor != "" {
+		conditions = append(conditions, "t.id > $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filter.Cursor)
 	}
 
-	query += fmt.Sprintf(" ORDER BY id ASC LIMIT $%d", argCount)
-	args = append(args, filter.Limit+1) // Fetch one extra to determine if there are more results
+	if len(conditions) > 0 {
+		query += " AND " + strings.Join(conditions, " AND ")
+	}
 
-	rows, err := t.db.QueryContext(ctx, query, args...)
+	query += " ORDER BY t.id"
+
+	if filter.Limit != nil {
+		query += " LIMIT $" + fmt.Sprint(len(args)+1)
+		args = append(args, *filter.Limit)
+	}
+
+	rows, err := t.db.Query(query, args...)
 	if err != nil {
-		slog.ErrorContext(ctx, "error while listing transactions", "error", err)
-		return nil, "", err
+		return nil, "", fmt.Errorf("error querying transactions: %v", err)
 	}
 	defer rows.Close()
 
-	transactions := make([]*Transaction, 0, filter.Limit)
-	var nextCursor string
+	var transactions []Transaction
+	var lastID string
 
 	for rows.Next() {
-		if len(transactions) == filter.Limit {
-			// We've reached the limit, so this row determines if there are more results
-			var lastID string
-			if err := rows.Scan(&lastID); err == nil {
-				nextCursor = lastID
-			}
-			break
-		}
-
-		transaction := &Transaction{}
-		err := rows.Scan(&transaction.Id, &transaction.AccountId, &transaction.Amount, &transaction.Direction)
+		var txn Transaction
+		err := rows.Scan(&txn.Id, &txn.Amount, &txn.Status, &txn.CreatedAt)
 		if err != nil {
-			slog.ErrorContext(ctx, "error while scanning transaction", "error", err)
-			return nil, "", err
+			return nil, "", fmt.Errorf("error scanning transaction: %v", err)
 		}
-		transactions = append(transactions, transaction)
+		transactions = append(transactions, txn)
+		lastID = txn.Id
 	}
 
-	if err := rows.Err(); err != nil {
-		slog.ErrorContext(ctx, "error after iterating rows", "error", err)
-		return nil, "", err
+	if err = rows.Err(); err != nil {
+		return nil, "", fmt.Errorf("error iterating transactions: %v", err)
+	}
+
+	var nextCursor string
+	if filter.Limit != nil && len(transactions) == *filter.Limit {
+		nextCursor = lastID
 	}
 
 	return transactions, nextCursor, nil
 }
 
-// TODO: Add Comment
+// DepositFunds deposits funds into an account
 func (t *TransactionRepository) DepositFunds(ctx context.Context, amount float64, userId, debitAccountId, creditAccountId string) (string, error) {
 	return t.addDoubleEntryTransactionFromExternal(ctx, amount, debitAccountId, creditAccountId, userId)
 }
 
-// TODO: Add Comment
+// WithdrawFunds withdraws funds from an account
 func (t *TransactionRepository) WithdrawFunds(ctx context.Context, amount float64, userId, debitAccountId, creditAccountId string) (string, error) {
 	return t.addDoubleEntryTransaction(ctx, amount, debitAccountId, creditAccountId, userId)
 }
 
-// TODO: Add Comment
+// TransferFunds transfers funds from one account to another
 func (t *TransactionRepository) TransferFunds(ctx context.Context, amount float64, userId, debitAccountId, creditAccountId string) (string, error) {
 	return t.addDoubleEntryTransaction(ctx, amount, debitAccountId, creditAccountId, userId)
 }
 
+// addDoubleEntryTransactionFromExternal adds a transaction with a double ledger entry
 func (t *TransactionRepository) addDoubleEntryTransactionFromExternal(ctx context.Context, amount float64, debitedAccountId, creditedAccountId, userId string) (string, error) {
 	tx, err := t.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
@@ -141,6 +153,7 @@ func (t *TransactionRepository) addDoubleEntryTransactionFromExternal(ctx contex
 	return "success", nil
 }
 
+// addDoubleEntryTransaction adds a transaction with a double ledger entry
 func (t *TransactionRepository) addDoubleEntryTransaction(ctx context.Context, amount float64, debitedAccountId, creditedAccountId, userId string) (string, error) {
 	tx, err := t.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
@@ -186,9 +199,10 @@ func (t *TransactionRepository) addDoubleEntryTransaction(ctx context.Context, a
 	return "success", nil
 }
 
+// checkSufficientBalance checks if the account has sufficient balance to withdraw the amount
 func (t *TransactionRepository) checkSufficientBalance(ctx context.Context, tx *sql.Tx, accountId string, amount float64) (bool, error) {
-	var balance float64
-	err := tx.QueryRowContext(ctx, `
+    var balance float64
+    err := tx.QueryRowContext(ctx, `
         SELECT 
             COALESCE(SUM(CASE WHEN direction = 'credit' THEN amount ELSE -amount END), 0) AS balance
         FROM
@@ -196,8 +210,8 @@ func (t *TransactionRepository) checkSufficientBalance(ctx context.Context, tx *
         WHERE
             account_id = $1
     `, accountId).Scan(&balance)
-	if err != nil {
-		return false, err
-	}
-	return balance >= amount, nil
+    if err != nil {
+        return false, err
+    }
+    return balance >= amount, nil
 }

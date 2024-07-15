@@ -52,3 +52,7 @@ END $$;
 -- acct_1: -350
 -- acct_2: -170
 -- acct_3: 520
+
+-- The final balances are always the same for a given number of transactions (as long as it's a multiple of 3 plus 2).
+-- acct_1 and acct_2 each participate in 33 transactions.
+-- acct_3 participates in 34 transactions.

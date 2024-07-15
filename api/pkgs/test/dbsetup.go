@@ -23,8 +23,6 @@ import (
 
 func SetupAndFillDatabaseContainer(seedDataFile string) (*sql.DB, testcontainers.Container) {
 	// Start a Docker container running PostgreSQL
-
-	// todo update this to just use our docker compose file
 	ctx := context.Background()
 	dbName := "postgres"
 	dbUser := "postgres"

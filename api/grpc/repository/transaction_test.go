@@ -229,75 +229,75 @@ func TestTransactionRepository_ListTransactions(t *testing.T) {
 		{
 			name: "successful list for acct_1",
 			filter: TransactionFilter{
-				AccountID: "acct_1",
-				Cursor:    "",
-				Limit:     5,
+				AccountID: strPtr("acct_1"),
+				Cursor:    nil,
+				Limit:     intPtr(5),
 			},
 			expectedResult: []*Transaction{
-				{Id: "txn_1", AccountId: "acct_1", Amount: 110, Direction: "debit"},
-				{Id: "txn_3", AccountId: "acct_1", Amount: 130, Direction: "credit"},
-				{Id: "txn_4", AccountId: "acct_1", Amount: 140, Direction: "debit"},
-				{Id: "txn_6", AccountId: "acct_1", Amount: 160, Direction: "credit"},
-				{Id: "txn_7", AccountId: "acct_1", Amount: 170, Direction: "debit"},
+				{Id: "txn_1", Amount: 110, Status: "success"},
+				{Id: "txn_3", Amount: 130, Status: "success"},
+				{Id: "txn_4", Amount: 140, Status: "success"},
+				{Id: "txn_6", Amount: 160, Status: "success"},
+				{Id: "txn_7", Amount: 170, Status: "success"},
 			},
-			expectedCursor: "txn_9",
+			expectedCursor: "txn_7",
 			wantErr:        false,
 		},
 		{
 			name: "successful list for acct_2",
 			filter: TransactionFilter{
-				AccountID: "acct_2",
-				Cursor:    "",
-				Limit:     5,
+				AccountID: strPtr("acct_2"),
+				Cursor:    nil,
+				Limit:     intPtr(5),
 			},
 			expectedResult: []*Transaction{
-				{Id: "txn_1", AccountId: "acct_2", Amount: 110, Direction: "credit"},
-				{Id: "txn_2", AccountId: "acct_2", Amount: 120, Direction: "debit"},
-				{Id: "txn_4", AccountId: "acct_2", Amount: 140, Direction: "credit"},
-				{Id: "txn_5", AccountId: "acct_2", Amount: 150, Direction: "debit"},
-				{Id: "txn_7", AccountId: "acct_2", Amount: 170, Direction: "credit"},
+				{Id: "txn_1", Amount: 110, Status: "success"},
+				{Id: "txn_2", Amount: 120, Status: "success"},
+				{Id: "txn_4", Amount: 140, Status: "success"},
+				{Id: "txn_5", Amount: 150, Status: "success"},
+				{Id: "txn_7", Amount: 170, Status: "success"},
 			},
-			expectedCursor: "txn_8",
+			expectedCursor: "txn_7",
 			wantErr:        false,
 		},
 		{
 			name: "successful list for acct_3",
 			filter: TransactionFilter{
-				AccountID: "acct_3",
-				Cursor:    "",
-				Limit:     5,
+				AccountID: strPtr("acct_3"),
+				Cursor:    nil,
+				Limit:     intPtr(5),
 			},
 			expectedResult: []*Transaction{
-				{Id: "txn_2", AccountId: "acct_3", Amount: 120, Direction: "credit"},
-				{Id: "txn_3", AccountId: "acct_3", Amount: 130, Direction: "debit"},
-				{Id: "txn_5", AccountId: "acct_3", Amount: 150, Direction: "credit"},
-				{Id: "txn_6", AccountId: "acct_3", Amount: 160, Direction: "debit"},
-				{Id: "txn_8", AccountId: "acct_3", Amount: 180, Direction: "credit"},
+				{Id: "txn_2", Amount: 120, Status: "success"},
+				{Id: "txn_3", Amount: 130, Status: "success"},
+				{Id: "txn_5", Amount: 150, Status: "success"},
+				{Id: "txn_6", Amount: 160, Status: "success"},
+				{Id: "txn_8", Amount: 180, Status: "success"},
 			},
-			expectedCursor: "txn_9",
+			expectedCursor: "txn_8",
 			wantErr:        false,
 		},
 		{
 			name: "successful list with cursor",
 			filter: TransactionFilter{
-				AccountID: "acct_1",
-				Cursor:    "txn_7",
-				Limit:     3,
+				AccountID: strPtr("acct_1"),
+				Cursor:    strPtr("txn_7"),
+				Limit:     intPtr(3),
 			},
 			expectedResult: []*Transaction{
-				{Id: "txn_9", AccountId: "acct_1", Amount: 190, Direction: "credit"},
-				{Id: "txn_10", AccountId: "acct_1", Amount: 200, Direction: "debit"},
-				{Id: "txn_12", AccountId: "acct_1", Amount: 220, Direction: "credit"},
+				{Id: "txn_9", Amount: 190, Status: "success"},
+				{Id: "txn_10", Amount: 200, Status: "success"},
+				{Id: "txn_12", Amount: 220, Status: "success"},
 			},
-			expectedCursor: "txn_13",
+			expectedCursor: "txn_12",
 			wantErr:        false,
 		},
 		{
 			name: "no transactions found",
 			filter: TransactionFilter{
-				AccountID: "non_existent_account",
-				Cursor:    "",
-				Limit:     5,
+				AccountID: strPtr("non_existent_account"),
+				Cursor:    nil,
+				Limit:     intPtr(5),
 			},
 			expectedResult: []*Transaction{},
 			expectedCursor: "",
@@ -308,7 +308,7 @@ func TestTransactionRepository_ListTransactions(t *testing.T) {
 	repo := NewTransactionRepository(db, "txn_", "le_")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, cursor, err := repo.ListTransactions(context.Background(), tt.filter)
+			result, cursor, err := repo.ListTransactions(context.Background(), &tt.filter)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -319,4 +319,13 @@ func TestTransactionRepository_ListTransactions(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Helper functions to create pointers
+func strPtr(s string) *string {
+	return &s
+}
+
+func intPtr(i int) *int {
+	return &i
 }

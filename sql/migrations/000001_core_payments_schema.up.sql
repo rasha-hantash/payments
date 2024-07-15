@@ -104,5 +104,5 @@ CREATE TRIGGER accounts_history_trigger_fn BEFORE UPDATE ON users FOR EACH ROW E
 CREATE TRIGGER transactions_history_trigger_fn BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE history_trigger_function ();
 CREATE TRIGGER payment_methods_history_trigger_fn BEFORE UPDATE ON payment_methods FOR EACH ROW EXECUTE FUNCTION history_trigger_function();
 
--- add trigger to block updates on ledger 
+
 -- TODO add COMMENT ON statements

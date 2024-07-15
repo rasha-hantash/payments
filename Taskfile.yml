@@ -30,20 +30,6 @@ tasks:
       cmds:
         - migrate -path sql/migrations/ -database "{{.CONNECTION_STRING}}" -verbose down
 
-    # staging Builds
-    docker:staging:build:gateway:
-        cmds:
-          - TODO
-    docker:staging:build:api:
-        cmds:
-          - TODO
-    docker:staging:push:gateway:
-        cmds:
-          - TODO
-    docker:staging:push:api:
-        cmds:
-          - TODO
-
     # Add new proto get commands here
     proto:gen:api:
       desc: |
