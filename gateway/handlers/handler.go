@@ -98,15 +98,24 @@ func WithdrawFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 			return
 		}
 
+		// Call the WithdrawFunds method
 		transaction, err := grpcClient.WithdrawFunds(&req)
 		if err != nil {
+			// Send error response
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		// Mark the idempotency key as used
 		idempotencyKeys[req.IdempotencyKey] = true
 
-		json.NewEncoder(w).Encode(transaction)
+		// Encode and send the transaction with status 200
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK) // Explicitly setting the status code to 200
+		if err := json.NewEncoder(w).Encode(transaction); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -130,13 +139,21 @@ func TransferFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 
 		transaction, err := grpcClient.TransferFunds(&req)
 		if err != nil {
+			// Send error response
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		// Mark the idempotency key as used
 		idempotencyKeys[req.IdempotencyKey] = true
 
-		json.NewEncoder(w).Encode(transaction)
+		// Encode and send the transaction with status 200
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK) // Explicitly setting the status code to 200
+		if err := json.NewEncoder(w).Encode(transaction); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -154,7 +171,12 @@ func ListTransactionsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 			return
 		}
 
-		json.NewEncoder(w).Encode(transactions)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK) // Explicitly setting the status code to 200
+		if err := json.NewEncoder(w).Encode(transactions); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 

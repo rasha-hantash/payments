@@ -25,7 +25,7 @@ func (g *GrpcService) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		return nil, err
 	}
 	return &pb.User{
-		Id:    res.Id,
+		Id:                 res.Id,
 		IntLedgerAccountId: res.IntLedgerAccountId.String,
 		ExtLedgerAccountId: res.ExtLedgerAccountId.String,
 	}, nil

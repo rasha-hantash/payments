@@ -6,8 +6,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/rasha-hantash/chariot-takehome/api/pkgs/test"
+	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -41,8 +41,8 @@ func TestCreateUser(t *testing.T) {
 			input: &User{
 				Email:              "error@example.com",
 				Name:               "Error User",
-				IntLedgerAccountId: sql.NullString{String: "int-ledger-id", Valid: true},
-				ExtLedgerAccountId: sql.NullString{String: "ext-ledger-id", Valid: true},
+				IntLedgerAccountId: sql.NullString{String: "int-ledger-id2", Valid: true},
+				ExtLedgerAccountId: sql.NullString{String: "ext-ledger-id2", Valid: true},
 			},
 			expectedErr: true,
 		},
@@ -53,13 +53,8 @@ func TestCreateUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := userRepo.CreateUser(context.Background(), tt.input)
-
-			// if res.Id != tt.expectedID {
-			// 	t.Errorf("expected id %v, got %v", tt.expectedID, res.Id)
-			// }
-
 			if !tt.expectedErr {
-				assert.NotEmpty(t,res.Id)
+				assert.NotEmpty(t, res.Id)
 			}
 			if err != nil && !tt.expectedErr {
 				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
