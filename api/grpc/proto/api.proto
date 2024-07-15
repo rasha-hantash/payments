@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/rasha-hantash/chariot-takehome/api/grpc/proto";
+
+import "google/protobuf/timestamp.proto";
+
+service ApiService {
+  rpc CreateUser(CreateUserRequest) returns (User);
+  rpc CreateAccount(CreateAccountRequest) returns (Account);
+  rpc DepositFunds(DepositFundsRequest) returns (Transaction);
+  rpc WithdrawFunds(WithdrawFundsRequest) returns (Transaction);
+  rpc TransferFunds(TransferFundsRequest) returns (Transaction);
+  rpc ListTransactions(ListTransactionsRequest) returns (ListTransactionsResponse);
+  rpc GetAccountBalance(GetAccountBalanceRequest) returns (AccountBalance);
+}
+
+message DepositFundsRequest {
+  double amount = 1;
+  string user_id = 2;
+  string debit_account_id = 3;
+  string credit_account_id = 4;
+  string idempotency_key = 5;
+}
+
+
+message WithdrawFundsRequest {
+  double amount = 1;
+  string user_id = 2;
+  string debit_account_id = 3;
+  string credit_account_id = 4;
+  string idempotency_key = 5;
+}
+
+message TransferFundsRequest {
+  double amount = 1;
+  string user_id = 2;
+  string debit_account_id = 3;
+  string credit_account_id = 4;
+  string idempotency_key = 5;
+}
+
+message User {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+}
+
+message Account {
+  string id = 1;
+  string account_type = 2;
+  string account_state = 3;
+}
+
+message Transaction {
+  string id = 1;
+  string account_id = 2;
+  double amount = 4;
+  string direction = 5;
+}
+
+message CreateUserRequest {
+  string name = 1;
+  string email = 2;
+}
+
+message CreateAccountRequest {
+  string account_type = 1;
+  string account_state = 2;
+}
+
+message TransactionRequest {
+  string account_id = 1;
+  double amount = 2;
+}
+
+
+message ListTransactionsRequest {
+  string account_id = 1;
+  string cursor = 2;
+  int32 page_size = 3;
+}
+
+message ListTransactionsResponse {
+  repeated Transaction transactions = 1;
+  string next_cursor = 2;
+}
+
+message GetAccountBalanceRequest {
+  string account_id = 1;
+  google.protobuf.Timestamp at_time = 2;
+}
+
+message AccountBalance {
+  string account_id = 1;
+  double balance = 2;
+  google.protobuf.Timestamp as_of = 3;
+}
