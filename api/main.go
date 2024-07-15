@@ -1,15 +1,15 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-	_ "github.com/lib/pq"
-	"github.com/rasha-hantash/chariot-takehome/api/pkgs/logger"
-	"google.golang.org/grpc"
-	"log"
 	"log/slog"
 	"net"
 	"os"
+
+	_ "github.com/lib/pq"
+	"github.com/rasha-hantash/chariot-takehome/api/pkgs/logger"
+	"github.com/rasha-hantash/chariot-takehome/api/pkgs/postgres"
+	"google.golang.org/grpc"
 
 	"github.com/caarlos0/env/v6"
 
@@ -32,24 +32,6 @@ type Config struct {
 	Database           DatabaseConfig
 	Mode               string `env:"MODE" envDefault:"local"`
 	AuthorizedAgentUrl string `env:"AUTHORIZED_AGENT_URL" envDefault:""`
-}
-
-type Client struct {
-	Conn *sql.DB
-}
-
-func newDBClient(psqlConnStr string) *Client {
-	conn, err := sql.Open("postgres", psqlConnStr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = conn.Ping()
-	if err != nil {
-		log.Println(err.Error())
-		log.Fatal(err)
-	}
-	slog.Info("postgres connection success")
-	return &Client{Conn: conn}
 }
 
 func main() {
@@ -75,7 +57,11 @@ func main() {
 		slog.Error("failed to start listener for grpc", "error", err)
 		os.Exit(1)
 	}
-	db := newDBClient(c.Database.ConnString)
+	db, err := postgres.NewDBClient(c.Database.ConnString)
+	if err != nil {
+		slog.Error("failed to connect to db", "error", err)
+		os.Exit(1)
+	}
 
 	grpcOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(logger.ContextPropagationUnaryServerInterceptor()),
@@ -83,9 +69,9 @@ func main() {
 	// Create a gRPC with an interceptor that uses the logger
 	s := grpc.NewServer(grpcOpts...)
 
-	t := repository.NewTransactionRepository(db.Conn, "txn_")
-	a := repository.NewAccountRepository(db.Conn, "acct_")
-	u := repository.NewUserRepository(db.Conn, a, "usr_")
+	t := repository.NewTransactionRepository(db, "txn_", "le_")
+	a := repository.NewAccountRepository(db, "acct_")
+	u := repository.NewUserRepository(db, a, "usr_")
 
 	pb.RegisterApiServiceServer(s, &service.GrpcService{UserRepo: u, AccountRepo: a, TransactionRepo: t})
 	if err := s.Serve(listener); err != nil {

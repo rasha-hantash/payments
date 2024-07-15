@@ -14,7 +14,7 @@ type Identifier[T any] interface {
 	Validate(T) (bool, error)
 }
 
-// todo turn this into a struct that stores the UUID, NEW() will convert to human readable string
+
 type ID string
 
 const (

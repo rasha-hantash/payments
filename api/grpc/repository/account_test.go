@@ -2,133 +2,89 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/rasha-hantash/chariot-takehome/api/pkgs/test"
+	"github.com/testcontainers/testcontainers-go"
+	"log"
 )
 
 func TestCreateAccount(t *testing.T) {
+	db, container := test.SetupAndFillDatabaseContainer("")
+	defer func(container testcontainers.Container) {
+		err := test.TeardownDatabaseContainer(container)
+		if err != nil {
+			log.Fatalf("failed to close container down: %v\n", err)
+		}
+	}(container)
+	defer db.Close()
+
 	tests := []struct {
 		name        string
 		input       *Account
-		mockSetup   func(mock sqlmock.Sqlmock)
-		expectedID  string
 		expectedErr error
 	}{
 		{
 			name: "successful insert",
 			input: &Account{
-				Id:           "acc-123",
 				AccountState: "active",
 				AccountType:  "savings",
 			},
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(`INSERT INTO accounts`).
-					WithArgs("acc-123", "active", "savings").
-					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("acc-123"))
-			},
-			expectedID:  "acc-123",
 			expectedErr: nil,
-		},
-		{
-			name: "insert error",
-			input: &Account{
-				Id:           "acc-456",
-				AccountState: "inactive",
-				AccountType:  "checking",
-			},
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(`INSERT INTO accounts`).
-					WithArgs("acc-456", "inactive", "checking").
-					WillReturnError(sql.ErrConnDone)
-			},
-			expectedID:  "",
-			expectedErr: sql.ErrConnDone,
 		},
 	}
 
+	repo := NewAccountRepository(db, "acct_")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
-			defer db.Close()
-
-			tt.mockSetup(mock)
-
-			repo := NewAccountRepository(db, "acct")
-			id, err := repo.CreateAccount(context.Background(), tt.input)
-
-			if id != tt.expectedID {
-				t.Errorf("expected id %v, got %v", tt.expectedID, id)
-			}
+			_, err := repo.CreateAccount(context.Background(), tt.input)
 			if err != tt.expectedErr {
 				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
-			}
-
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were unfulfilled expectations: %s", err)
 			}
 		})
 	}
 }
 
 func TestGetAccountBalance(t *testing.T) {
+	db, container := test.SetupAndFillDatabaseContainer("seed_accounts_get_balance.sql")
+	defer func(container testcontainers.Container) {
+		err := test.TeardownDatabaseContainer(container)
+		if err != nil {
+			log.Fatalf("failed to close container down: %v\n", err)
+		}
+	}(container)
+	defer db.Close()
+
 	tests := []struct {
 		name        string
 		accountId   string
-		mockQuery   func(mock sqlmock.Sqlmock, accountId string)
 		expectedBal int64
 		expectedErr bool
 	}{
 		{
-			name:      "Valid balance",
-			accountId: "account-1",
-			mockQuery: func(mock sqlmock.Sqlmock, accountId string) {
-				mock.ExpectQuery("SELECT SUM\\(CASE WHEN direction = 'credit' THEN amount ELSE -amount END\\) as balance FROM transactions WHERE account_id = \\?").
-					WithArgs(accountId).
-					WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(1000))
-			},
-			expectedBal: 1000,
+			name:        "Valid internal balance",
+			accountId:   "acct_1",
+			expectedBal: 450,
 			expectedErr: false,
 		},
 		{
-			name:      "No transactions",
-			accountId: "account-2",
-			mockQuery: func(mock sqlmock.Sqlmock, accountId string) {
-				mock.ExpectQuery("SELECT SUM\\(CASE WHEN direction = 'credit' THEN amount ELSE -amount END\\) as balance FROM transactions WHERE account_id = \\?").
-					WithArgs(accountId).
-					WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(0))
-			},
-			expectedBal: 0,
+			name:        "Valid external balance",
+			accountId:   "acct_2",
+			expectedBal: -450,
 			expectedErr: false,
 		},
 		{
-			name:      "Query error",
-			accountId: "account-3",
-			mockQuery: func(mock sqlmock.Sqlmock, accountId string) {
-				mock.ExpectQuery("SELECT SUM\\(CASE WHEN direction = 'credit' THEN amount ELSE -amount END\\) as balance FROM transactions WHERE account_id = \\?").
-					WithArgs(accountId).
-					WillReturnError(sql.ErrNoRows)
-			},
+			name:        "No balance",
+			accountId:   "account_3",
 			expectedBal: 0,
-			expectedErr: true,
+			expectedErr: false,
 		},
 	}
 
+	repo := &AccountRepository{db: db}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			assert.NoError(t, err)
-			defer db.Close()
-
-			repo := &AccountRepository{db: db}
-
-			tt.mockQuery(mock, tt.accountId)
-
 			balance, err := repo.GetAccountBalance(context.Background(), tt.accountId)
 
 			if tt.expectedErr {
@@ -137,8 +93,6 @@ func TestGetAccountBalance(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedBal, balance)
 			}
-
-			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }
