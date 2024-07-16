@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"sync"
 
 	pb "github.com/rasha-hantash/chariot-takehome/api/grpc/proto"
@@ -162,7 +163,14 @@ func TransferFundsHandler(ctx context.Context, grpcClient *client.ApiClient) htt
 func ListTransactionsHandler(ctx context.Context, grpcClient *client.ApiClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		accountID := r.URL.Query().Get("account_id")
-		slog.Info("query param", "accountID", accountID)
+		cursor := r.URL.Query().Get("cursor")
+		limit := r.URL.Query().Get("limit")
+		limitInt, err := strconv.Atoi(limit)
+		if err != nil {
+			slog.ErrorContext(ctx, "error parsing limit", "error", err, "limit", limit)
+			http.Error(w, "invalid limit value", http.StatusBadRequest)
+			return
+		}
 
 		// Validate required query parameters
 		if accountID == "" {
@@ -171,7 +179,8 @@ func ListTransactionsHandler(ctx context.Context, grpcClient *client.ApiClient) 
 		}
 		req := pb.ListTransactionsRequest{
 			AccountId: accountID,
-			//Cursor:    cursor,
+			Cursor:    cursor,
+			Limit:     int32(limitInt),
 		}
 
 		transactions, err := grpcClient.ListTransactions(ctx, &req)
