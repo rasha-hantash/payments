@@ -87,6 +87,8 @@ func makePostRequest(endpoint string, data interface{}) ([]byte, error) {
 	return body, nil
 }
 
+// DataAPI is meant to be an interface for the NoteService struct
+// var _ DataAPI = &NoteService{}
 
 // Function to make a POST request and return the response
 

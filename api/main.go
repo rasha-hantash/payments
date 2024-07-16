@@ -36,6 +36,11 @@ type Config struct {
 
 func main() {
 	var c Config
+	err := env.Parse(&c)
+	if err != nil {
+		slog.Error("failed to parse default config", "error", err)
+		os.Exit(1)
+	}
 
 	opts := &slog.HandlerOptions{
 		AddSource: true,
@@ -45,11 +50,6 @@ func main() {
 	h := &logger.ContextHandler{Handler: slog.NewJSONHandler(os.Stdout, opts)}
 	slogLogger := slog.New(h)
 	slog.SetDefault(slogLogger)
-	err := env.Parse(&c)
-	if err != nil {
-		slog.Error("failed to parse default config", "error", err)
-		os.Exit(1)
-	}
 	slog.Info("starting grpc", "port", c.ServerPort)
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", c.ServerPort))
@@ -57,6 +57,7 @@ func main() {
 		slog.Error("failed to start listener for grpc", "error", err)
 		os.Exit(1)
 	}
+
 	db, err := postgres.NewDBClient(c.Database.ConnString)
 	if err != nil {
 		slog.Error("failed to connect to db", "error", err)
@@ -68,7 +69,6 @@ func main() {
 	}
 	// Create a gRPC with an interceptor that uses the logger
 	s := grpc.NewServer(grpcOpts...)
-
 	t := repository.NewTransactionRepository(db, "txn_", "le_")
 	a := repository.NewAccountRepository(db, "acct_")
 	u := repository.NewUserRepository(db, a, "usr_")

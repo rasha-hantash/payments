@@ -2,6 +2,7 @@ package main
 
 import (
 	// "fmt"
+	"context"
 	"log"
 	"log/slog"
 	"net/http"
@@ -24,6 +25,7 @@ type GatewayHandler struct {
 }
 
 func main() {
+	ctx := context.Background()
 	// Parse environment variables
 	cfg := Config{}
 	if err := env.Parse(&cfg); err != nil {
@@ -43,13 +45,13 @@ func main() {
 	router := mux.NewRouter()
 
 	// Add your routes here, for example:
-	router.HandleFunc("/create_user", h.CreateUserHandler(grpcClient)).Methods("POST")
-	router.HandleFunc("/create_account", h.CreateAccountHandler(grpcClient)).Methods("POST")
-	router.HandleFunc("/deposit_funds", h.DepositFundsHandler(grpcClient)).Methods("POST")
-	router.HandleFunc("/withdraw_funds", h.WithdrawFundsHandler(grpcClient)).Methods("POST")
-	router.HandleFunc("/transfer_funds", h.TransferFundsHandler(grpcClient)).Methods("POST")
-	router.HandleFunc("/list_transactions", h.ListTransactionsHandler(grpcClient)).Methods("GET")
-	router.HandleFunc("/get_account_balance", h.GetAccountBalanceHandler(grpcClient)).Methods("GET")
+	router.HandleFunc("/create_user", h.CreateUserHandler(ctx, grpcClient)).Methods("POST")
+	router.HandleFunc("/create_account", h.CreateAccountHandler(ctx, grpcClient)).Methods("POST")
+	router.HandleFunc("/deposit_funds", h.DepositFundsHandler(ctx, grpcClient)).Methods("POST")
+	router.HandleFunc("/withdraw_funds", h.WithdrawFundsHandler(ctx, grpcClient)).Methods("POST")
+	router.HandleFunc("/transfer_funds", h.TransferFundsHandler(ctx, grpcClient)).Methods("POST")
+	router.HandleFunc("/list_transactions", h.ListTransactionsHandler(ctx, grpcClient)).Methods("GET")
+	router.HandleFunc("/get_account_balance", h.GetAccountBalanceHandler(ctx, grpcClient)).Methods("GET")
 
 	log.Println("Gateway server listening on :8080")
 	log.Fatal(http.ListenAndServe(":8080", router))
