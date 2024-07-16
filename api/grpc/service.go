@@ -101,7 +101,7 @@ func (g *GrpcService) GetAccountBalance(ctx context.Context, req *pb.GetAccountB
 }
 
 func (g *GrpcService) ListTransactions(ctx context.Context, req *pb.ListTransactionsRequest) (*pb.ListTransactionsResponse, error) {
-	ctx = lg.AppendCtx(ctx, slog.String("account_id", req.AccountId), slog.String("cursor", req.Cursor), slog.Int("page_size", int(req.PageSize)))
+	ctx = lg.AppendCtx(ctx, slog.String("account_id", req.AccountId), slog.String("cursor", req.Cursor), slog.Int("page_size", int(req.Limit)))
 	slog.InfoContext(ctx, "listing transactions")
 	
 	var filter repository.TransactionFilter
