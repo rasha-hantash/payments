@@ -10,6 +10,8 @@ import (
 	"github.com/rasha-hantash/chariot-takehome/api/pkgs/logger"
 	"github.com/rasha-hantash/chariot-takehome/api/pkgs/postgres"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/caarlos0/env/v6"
 
@@ -67,13 +69,27 @@ func main() {
 	grpcOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(logger.ContextPropagationUnaryServerInterceptor()),
 	}
-	// Create a gRPC with an interceptor that uses the logger
+	
+	// Create a gRPC server with an interceptor that uses the logger
 	s := grpc.NewServer(grpcOpts...)
+	
+	// Initialize repositories
 	t := repository.NewTransactionRepository(db, "txn_", "le_")
 	a := repository.NewAccountRepository(db, "acct_")
 	u := repository.NewUserRepository(db, a, "usr_")
 
+	// Register your service
 	pb.RegisterApiServiceServer(s, &service.GrpcService{UserRepo: u, AccountRepo: a, TransactionRepo: t})
+
+	// Create and register the health server
+	healthServer := health.NewServer()
+	healthpb.RegisterHealthServer(s, healthServer)
+
+	// Set the health status
+	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+
+	slog.Info("gRPC server is running with health check enabled", "port", c.ServerPort)
+
 	if err := s.Serve(listener); err != nil {
 		slog.Error("failed to serve", "error", err)
 		os.Exit(1)
