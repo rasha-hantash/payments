@@ -73,5 +73,35 @@ func (g *GrpcService) GetAccountBalance(ctx context.Context, req *pb.GetAccountB
 	if err != nil {
 		return nil, err
 	}
+	if balance == 0 {
+		return &pb.AccountBalance{Balance: 0}, nil
+	}
 	return &pb.AccountBalance{Balance: float64(balance / 100)}, nil
+}
+
+func (g *GrpcService) ListTransactions(ctx context.Context, req *pb.ListTransactionsRequest) (*pb.ListTransactionsResponse, error) {
+	var filter repository.TransactionFilter
+
+	filter.AccountID = &req.AccountId
+	filter.Cursor = &req.Cursor
+	filter.Limit = nil // todo change this to req.PageSize
+
+	transactions, nextCursor, err := g.TransactionRepo.ListTransactions(ctx, &filter)
+	if err != nil {
+		return nil, err
+	}
+	var pbTransactions []*pb.Transaction
+	for _, t := range transactions {
+		pbTransactions = append(pbTransactions, &pb.Transaction{
+			Id:        t.Id,
+			Amount:    float64(t.Amount),
+			AccountId: t.AccountId,
+			Direction: t.Direction,
+		})
+	}
+
+	return &pb.ListTransactionsResponse{
+		Transactions: pbTransactions,
+		NextCursor:   nextCursor,
+	}, nil
 }
