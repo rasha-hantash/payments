@@ -128,3 +128,42 @@ func TestValidate(t *testing.T) {
 		})
 	}
 }
+
+// TODO fix up these benchmark tests
+func BenchmarkIDNew(b *testing.B) {
+	var id ID
+	for i := 0; i < b.N; i++ {
+		id.New()
+	}
+}
+
+func BenchmarkIDFromString(b *testing.B) {
+	validID := "PREFIX_220715123456ABCDEFGHIJ"
+	var id ID
+	for i := 0; i < b.N; i++ {
+		_, err := id.FromString(validID)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkIDFromBytes(b *testing.B) {
+	validID := []byte("PREFIX_220715123456ABCDEFGHIJ")
+	var id ID
+	for i := 0; i < b.N; i++ {
+		_, err := id.FromBytes(validID)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkIDValidate(b *testing.B) {
+	id := ID("PREFIX_220715123456ABCDEFGHIJ")
+	for i := 0; i < b.N; i++ {
+		if !id.Validate() {
+			b.Fatal("ID should be valid")
+		}
+	}
+}

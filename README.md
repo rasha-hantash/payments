@@ -139,17 +139,17 @@ curl -X POST -H "Content-Type: application/json" -d '{"name": "John Doe", "email
 # Create an account
 curl -X POST -H "Content-Type: application/json" -d '{"user_id": "usr_[your-returned-id]", "account_type": "checking", "account_state":"open"}' "$BASE_URL/create_account"
 
-# Deposit funds
-curl -X POST -H "Content-Type: application/json" -d '{"debit_account_id": "acct_[your-account-id]", "credit_account_id": "acct_[your-account-id]", "amount": 1000}' "$BASE_URL/deposit_funds"
+# Deposit funds only allows to deposit from external ledger account to internal ledger account
+curl -X POST -H "Content-Type: application/json" -d '{"debit_account_id": "acct_[your-ext-account-id]", "credit_account_id": "acct_[your-int-account-id]", "amount": 1000,  "idempotency_key": "blah"}' "$BASE_URL/deposit_funds"
 
-# Withdraw funds
-curl -X POST -H "Content-Type: application/json" -d '{"debit_account_id": "acct_[your-account-id]", "credit_account_id": "acct_[your-account-id]", "amount": 500}' "$BASE_URL/withdraw_funds"
+# Withdraw funds only allows to deposit from internal ledger account to external ledger account
+curl -X POST -H "Content-Type: application/json" -d '{"debit_account_id": "acct_[your-int-account-id]", "credit_account_id": "acct_[your-ext-account-id]", "amount": 500,  "idempotency_key": "blah"}' "$BASE_URL/withdraw_funds"
 
-# Transfer funds
-curl -X POST -H "Content-Type: application/json" -d '{"debit_account_id": "acct_[your-account-id]", "credit_account_id": "acct_[your-account-id]", "amount": 250}' "$BASE_URL/transfer_funds"
+# Transfer funds between internal accounts only 
+curl -X POST -H "Content-Type: application/json" -d '{"debit_account_id": "acct_[your-int-account-id]", "credit_account_id": "acct_[another-persons-int-account-id]", "amount": 250,  "idempotency_key": "tr_123"}' "$BASE_URL/transfer_funds"
 
 # List transactions
-curl -X GET "$BASE_URL/list_transactions?account_id=acct_[your-account-id]&limit=10"
+curl -X GET "$BASE_URL/list_transactions?account_id=acct_[your-account-id]"
 
 # Get account balance
 curl -X GET "$BASE_URL/get_account_balance?account_id=acct_[your-acct-id]"

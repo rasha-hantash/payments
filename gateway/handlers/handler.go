@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"sync"
 
@@ -159,10 +160,17 @@ func TransferFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 
 func ListTransactionsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req pb.ListTransactionsRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		accountID := r.URL.Query().Get("account_id")
+		slog.Info("query param", "accountID", accountID)
+
+		// Validate required query parameters
+		if accountID == "" {
+			http.Error(w, "missing required query parameters: account_id and at_time", http.StatusBadRequest)
 			return
+		}
+		req := pb.ListTransactionsRequest{
+			AccountId: accountID,
+			//Cursor:    cursor,
 		}
 
 		transactions, err := grpcClient.ListTransactions(&req)
@@ -180,20 +188,40 @@ func ListTransactionsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 	}
 }
 
+// GetAccountBalanceHandler handles the request for getting account balance
 func GetAccountBalanceHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req pb.GetAccountBalanceRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		// Extract query parameters
+		accountID := r.URL.Query().Get("account_id")
+		slog.Info("query param", "accountID", accountID)
+
+		// Validate required query parameters
+		if accountID == "" {
+			http.Error(w, "missing required query parameters: account_id and at_time", http.StatusBadRequest)
 			return
 		}
 
+		// Create the request object
+		req := pb.GetAccountBalanceRequest{
+			AccountId: accountID,
+			// AtTime:    atTime,
+		}
+
+		// Call the gRPC client
 		balance, err := grpcClient.GetAccountBalance(&req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		json.NewEncoder(w).Encode(balance)
+		slog.Info("balance", "balance", balance.Balance)
+
+		// Encode the response as JSON
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK) // Explicitly setting the status code to 200
+		if err := json.NewEncoder(w).Encode(balance); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }

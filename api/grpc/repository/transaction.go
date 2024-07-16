@@ -19,6 +19,7 @@ type TransactionRepository struct {
 type Transaction struct {
 	Id        string
 	AccountId string
+	Direction string
 	Amount    int64
 	Status    string
 	CreatedAt string
@@ -31,13 +32,15 @@ type TransactionFilter struct {
 	Limit     *int
 }
 
+// TODO thing about how to elegantly handle storing amount as bigint without needing to amount*100 everywhere
+
 func NewTransactionRepository(db *sql.DB, txnPrefix, ledgerPrefix string) *TransactionRepository {
 	return &TransactionRepository{db: db, txnID: identifier.ID(txnPrefix), ledgerID: identifier.ID(ledgerPrefix)}
 }
 
 func (t *TransactionRepository) ListTransactions(ctx context.Context, filter *TransactionFilter) ([]Transaction, string, error) {
 	query := `
-	SELECT DISTINCT t.id, le.account_id, t.amount, t.status, t.created_at
+	SELECT DISTINCT t.id, le.account_id, t.amount, t.status, le.direction, t.created_at
 	FROM transactions t
 	JOIN ledger_entries le ON t.id = le.transaction_id
 	WHERE 1=1
@@ -78,11 +81,14 @@ func (t *TransactionRepository) ListTransactions(ctx context.Context, filter *Tr
 
 	for rows.Next() {
 		var txn Transaction
-		err := rows.Scan(&txn.Id, &txn.AccountId, &txn.Amount, &txn.Status, &txn.CreatedAt)
+
+		err := rows.Scan(&txn.Id, &txn.AccountId, &txn.Amount, &txn.Status, &txn.Direction, &txn.CreatedAt)
+
 		if err != nil {
 			return nil, "", fmt.Errorf("error scanning transaction: %v", err)
 		}
 		txn.AccountId = *filter.AccountID
+		txn.Amount = txn.Amount / 100
 		transactions = append(transactions, txn)
 		lastID = txn.Id
 	}
@@ -149,6 +155,10 @@ func (t *TransactionRepository) addDoubleEntryTransactionFromExternal(ctx contex
 		return "", err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return "", fmt.Errorf("error committing transaction: %w", err)
+	}
+
 	return string(txnId), nil
 }
 
@@ -195,6 +205,10 @@ func (t *TransactionRepository) addDoubleEntryTransaction(ctx context.Context, a
 		return "", err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return "", fmt.Errorf("error committing transaction: %w", err)
+	}
+
 	return string(txnId), nil
 }
 
@@ -212,5 +226,5 @@ func (t *TransactionRepository) checkSufficientBalance(ctx context.Context, tx *
 	if err != nil {
 		return false, err
 	}
-	return balance >= amount, nil
+	return balance >= amount*100, nil
 }

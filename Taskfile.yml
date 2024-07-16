@@ -39,6 +39,7 @@ tasks:
 
     setup:
       cmds:
+        - brew install jq
         - brew install docker
         - brew install docker-compose
         - brew install golang-migrate
