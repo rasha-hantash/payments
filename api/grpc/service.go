@@ -3,8 +3,11 @@ package grpc
 
 import (
 	"context"
+	"log/slog"
+
 	pb "github.com/rasha-hantash/chariot-takehome/api/grpc/proto"
 	"github.com/rasha-hantash/chariot-takehome/api/grpc/repository"
+	lg "github.com/rasha-hantash/chariot-takehome/api/pkgs/logger"
 )
 
 type GrpcService struct {
@@ -15,6 +18,9 @@ type GrpcService struct {
 }
 
 func (g *GrpcService) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.User, error) {
+	ctx = lg.AppendCtx(ctx, slog.String("email", req.Email), slog.String("name", req.Name)) 
+	slog.InfoContext(ctx, "creating user")
+	
 	user := &repository.User{
 		Name:  req.Name,
 		Email: req.Email,
@@ -32,6 +38,9 @@ func (g *GrpcService) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 }
 
 func (g *GrpcService) CreateAccount(ctx context.Context, req *pb.CreateAccountRequest) (*pb.Account, error) {
+	ctx = lg.AppendCtx(ctx, slog.String("account_state", req.AccountState), slog.String("account_type", req.AccountType))
+	slog.InfoContext(ctx, "creating account")
+	
 	account := &repository.Account{
 		AccountState: req.AccountState,
 		AccountType:  req.AccountType,
@@ -45,6 +54,9 @@ func (g *GrpcService) CreateAccount(ctx context.Context, req *pb.CreateAccountRe
 }
 
 func (g *GrpcService) DepositFunds(ctx context.Context, req *pb.DepositFundsRequest) (*pb.Transaction, error) {
+	ctx = lg.AppendCtx(ctx, slog.Float64("amount", req.Amount), slog.String("user_id", req.UserId), slog.String("debit_account_id", req.DebitAccountId), slog.String("credit_account_id", req.CreditAccountId))
+	slog.InfoContext(ctx, "depositing funds")
+
 	id, err := g.TransactionRepo.DepositFunds(ctx, req.Amount, req.UserId, req.DebitAccountId, req.CreditAccountId)
 	if err != nil {
 		return nil, err
@@ -53,6 +65,9 @@ func (g *GrpcService) DepositFunds(ctx context.Context, req *pb.DepositFundsRequ
 }
 
 func (g *GrpcService) WithdrawFunds(ctx context.Context, req *pb.WithdrawFundsRequest) (*pb.Transaction, error) {
+	ctx = lg.AppendCtx(ctx, slog.Float64("amount", req.Amount), slog.String("user_id", req.UserId), slog.String("debit_account_id", req.DebitAccountId), slog.String("credit_account_id", req.CreditAccountId))
+	slog.InfoContext(ctx, "withdrawing funds")
+	
 	id, err := g.TransactionRepo.WithdrawFunds(ctx, req.Amount, req.UserId, req.DebitAccountId, req.CreditAccountId)
 	if err != nil {
 		return nil, err
@@ -61,6 +76,9 @@ func (g *GrpcService) WithdrawFunds(ctx context.Context, req *pb.WithdrawFundsRe
 }
 
 func (g *GrpcService) TransferFunds(ctx context.Context, req *pb.TransferFundsRequest) (*pb.Transaction, error) {
+	ctx = lg.AppendCtx(ctx, slog.Float64("amount", req.Amount), slog.String("user_id", req.UserId), slog.String("debit_account_id", req.DebitAccountId), slog.String("credit_account_id", req.CreditAccountId))
+	slog.InfoContext(ctx, "transferring funds")
+	
 	id, err := g.TransactionRepo.TransferFunds(ctx, req.Amount, req.UserId, req.DebitAccountId, req.CreditAccountId)
 	if err != nil {
 		return nil, err
@@ -69,6 +87,9 @@ func (g *GrpcService) TransferFunds(ctx context.Context, req *pb.TransferFundsRe
 }
 
 func (g *GrpcService) GetAccountBalance(ctx context.Context, req *pb.GetAccountBalanceRequest) (*pb.AccountBalance, error) {
+	ctx = lg.AppendCtx(ctx, slog.String("account_id", req.AccountId), slog.Time("timestamp", req.AtTime.AsTime()))
+	slog.InfoContext(ctx, "getting account balance")
+	
 	balance, err := g.AccountRepo.GetAccountBalance(ctx, req.AccountId)
 	if err != nil {
 		return nil, err
@@ -80,6 +101,9 @@ func (g *GrpcService) GetAccountBalance(ctx context.Context, req *pb.GetAccountB
 }
 
 func (g *GrpcService) ListTransactions(ctx context.Context, req *pb.ListTransactionsRequest) (*pb.ListTransactionsResponse, error) {
+	ctx = lg.AppendCtx(ctx, slog.String("account_id", req.AccountId), slog.String("cursor", req.Cursor), slog.Int("page_size", int(req.Limit)))
+	slog.InfoContext(ctx, "listing transactions")
+	
 	var filter repository.TransactionFilter
 
 	filter.AccountID = &req.AccountId

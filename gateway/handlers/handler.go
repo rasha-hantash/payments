@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"sync"
 
 	pb "github.com/rasha-hantash/chariot-takehome/api/grpc/proto"
@@ -15,7 +17,7 @@ var (
 	mu              sync.Mutex
 )
 
-func CreateUserHandler(grpcClient *client.ApiClient) http.HandlerFunc {
+func CreateUserHandler(ctx context.Context, grpcClient *client.ApiClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req pb.CreateUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -23,7 +25,7 @@ func CreateUserHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 			return
 		}
 
-		user, err := grpcClient.CreateUser(&req)
+		user, err := grpcClient.CreateUser(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -33,7 +35,7 @@ func CreateUserHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 	}
 }
 
-func CreateAccountHandler(grpcClient *client.ApiClient) http.HandlerFunc {
+func CreateAccountHandler(ctx context.Context, grpcClient *client.ApiClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req pb.CreateAccountRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -41,7 +43,7 @@ func CreateAccountHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 			return
 		}
 
-		account, err := grpcClient.CreateAccount(&req)
+		account, err := grpcClient.CreateAccount(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -51,7 +53,7 @@ func CreateAccountHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 	}
 }
 
-func DepositFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
+func DepositFundsHandler(ctx context.Context, grpcClient *client.ApiClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req pb.DepositFundsRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -69,7 +71,7 @@ func DepositFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 			return
 		}
 
-		transaction, err := grpcClient.DepositFunds(&req)
+		transaction, err := grpcClient.DepositFunds(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -81,7 +83,7 @@ func DepositFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 	}
 }
 
-func WithdrawFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
+func WithdrawFundsHandler(ctx context.Context, grpcClient *client.ApiClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req pb.WithdrawFundsRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -100,7 +102,7 @@ func WithdrawFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 		}
 
 		// Call the WithdrawFunds method
-		transaction, err := grpcClient.WithdrawFunds(&req)
+		transaction, err := grpcClient.WithdrawFunds(ctx, &req)
 		if err != nil {
 			// Send error response
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -120,7 +122,7 @@ func WithdrawFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 	}
 }
 
-func TransferFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
+func TransferFundsHandler(ctx context.Context, grpcClient *client.ApiClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req pb.TransferFundsRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -138,7 +140,7 @@ func TransferFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 			return
 		}
 
-		transaction, err := grpcClient.TransferFunds(&req)
+		transaction, err := grpcClient.TransferFunds(ctx, &req)
 		if err != nil {
 			// Send error response
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -158,10 +160,17 @@ func TransferFundsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 	}
 }
 
-func ListTransactionsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
+func ListTransactionsHandler(ctx context.Context, grpcClient *client.ApiClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		accountID := r.URL.Query().Get("account_id")
-		slog.Info("query param", "accountID", accountID)
+		cursor := r.URL.Query().Get("cursor")
+		limit := r.URL.Query().Get("limit")
+		limitInt, err := strconv.Atoi(limit)
+		if err != nil {
+			slog.ErrorContext(ctx, "error parsing limit", "error", err, "limit", limit)
+			http.Error(w, "invalid limit value", http.StatusBadRequest)
+			return
+		}
 
 		// Validate required query parameters
 		if accountID == "" {
@@ -170,10 +179,11 @@ func ListTransactionsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 		}
 		req := pb.ListTransactionsRequest{
 			AccountId: accountID,
-			//Cursor:    cursor,
+			Cursor:    cursor,
+			Limit:     int32(limitInt),
 		}
 
-		transactions, err := grpcClient.ListTransactions(&req)
+		transactions, err := grpcClient.ListTransactions(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -189,7 +199,7 @@ func ListTransactionsHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 }
 
 // GetAccountBalanceHandler handles the request for getting account balance
-func GetAccountBalanceHandler(grpcClient *client.ApiClient) http.HandlerFunc {
+func GetAccountBalanceHandler(ctx context.Context, grpcClient *client.ApiClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Extract query parameters
 		accountID := r.URL.Query().Get("account_id")
@@ -208,13 +218,11 @@ func GetAccountBalanceHandler(grpcClient *client.ApiClient) http.HandlerFunc {
 		}
 
 		// Call the gRPC client
-		balance, err := grpcClient.GetAccountBalance(&req)
+		balance, err := grpcClient.GetAccountBalance(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		slog.Info("balance", "balance", balance.Balance)
 
 		// Encode the response as JSON
 		w.Header().Set("Content-Type", "application/json")

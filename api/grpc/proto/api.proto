@@ -81,7 +81,7 @@ message TransactionRequest {
 message ListTransactionsRequest {
   string account_id = 1;
   string cursor = 2;
-  int32 page_size = 3;
+  int32 limit = 3;
 }
 
 message ListTransactionsResponse {
