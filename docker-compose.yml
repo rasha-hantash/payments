@@ -34,6 +34,8 @@ services:
     networks:
       - chariot
   api:
+    labels:
+      shipyard.route: '/api'
     build:
       context: .
       dockerfile: ./api/Dockerfile
