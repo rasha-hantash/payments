@@ -17,6 +17,8 @@ services:
     networks:
       - chariot
   gateway:
+    labels:
+      shipyard.route: '/gateway'
     build:
       context: .
       dockerfile: ./gateway/Dockerfile
